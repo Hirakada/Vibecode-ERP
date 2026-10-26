@@ -1,0 +1,6 @@
+{
+  "name": "Caozy Beverage ERP & POS",
+  "description": "Sistem ERP dan POS mobile-first khusus kedai minuman dengan inventaris FIFO, konfirmasi pembayaran manual, cetak struk thermal, dan offline-first.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

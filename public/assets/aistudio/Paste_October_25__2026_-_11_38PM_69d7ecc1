@@ -1,0 +1,1387 @@
+# MASTER PROMPT — CAOZY ERP
+## Mobile-First Beverage Shop ERP with Dedicated POS, FIFO Inventory, Manual Payments, Thermal Printing, and Offline-First Architecture
+
+## 1. ROLE AND OBJECTIVE
+
+Act as a Senior Software Architect, Full-Stack Engineer, Database Engineer, ERP Consultant, Inventory Accountant, UI/UX Designer, and QA Engineer.
+
+Build a functional, maintainable, production-oriented ERP application for **Caozy, a beverage shop (kedai minuman) in Indonesia**.
+
+The application must cover daily business operations:
+
+- Point of Sale (POS).
+- Product and menu management.
+- Recipe and beverage costing.
+- FIFO inventory management.
+- Raw ingredients and packaging materials.
+- Purchasing and supplier management.
+- Manual payment recording and confirmation.
+- Thermal receipt printing.
+- Cash management and operating expenses.
+- Sales, inventory, and financial reporting.
+- Offline transaction entry and cloud synchronization.
+- Authentication, roles, permissions, and audit logs.
+
+The application must be mobile-first, responsive, installable as a Progressive Web App (PWA), and usable from desktop browsers.
+
+**Critical architectural requirement: Admin and POS must be separate application areas with distinct layouts, navigation, workflows, and permissions.**
+
+Do not deliver a UI-only prototype. Implement real business logic, database persistence, migrations, validation, authorization, and tests.
+
+Inspect the existing repository before making changes. Preserve working functionality, avoid unnecessary rewrites, and implement incrementally.
+
+Do not claim that features, tests, or deployments work unless they have actually been verified.
+
+---
+
+## 2. PREFERRED TECHNOLOGY STACK
+
+Use the following stack unless the existing repository provides a compelling reason to retain a compatible alternative.
+
+### Frontend
+- Next.js App Router.
+- React.
+- TypeScript with strict type checking.
+- Tailwind CSS.
+- shadcn/ui or an equivalent accessible component library.
+- React Hook Form.
+- Zod validation.
+- TanStack Table for complex administrative tables when useful.
+- A charting library for reports.
+
+### Backend and database
+- Supabase PostgreSQL as the primary cloud database.
+- Supabase Auth for authentication.
+- Supabase Storage when file or image storage is required.
+- Database migrations managed through Supabase CLI or an equivalent reproducible migration workflow.
+- PostgreSQL functions and transactions for critical inventory and sales operations.
+
+### Offline storage and PWA
+- IndexedDB using Dexie.js.
+- Service worker and PWA manifest.
+- An explicit offline mutation queue/outbox.
+- A synchronization engine with idempotency, retry, conflict detection, and observable status.
+
+### Testing
+- Vitest for unit and integration tests.
+- Playwright for end-to-end tests.
+- TypeScript checks and ESLint.
+- Supabase local development and database tests when available.
+
+### Package management
+Use the existing package manager if already established. Otherwise, prefer pnpm.
+
+### Architecture constraints
+- Keep business logic independent of React components.
+- Separate domain logic, application services, repository interfaces, database adapters, and UI.
+- Keep monetary calculations deterministic.
+- Use integer IDR amounts for currency calculations whenever possible.
+- Use explicit decimal handling for quantities and unit costs where necessary.
+- Store timestamps in UTC and display them in Asia/Jakarta time.
+- Use UUIDs or other stable client-generated identifiers for records that must be created offline.
+
+Supabase is the initial database provider. Keep repository interfaces sufficiently modular for a future Firebase adapter, but do not implement multiple competing cloud databases in the first release.
+
+---
+
+## 3. APPLICATION STRUCTURE: ADMIN AND POS MUST BE SEPARATE
+
+Implement two clearly separated application areas.
+
+### A. Admin application
+
+Suggested route prefix:
+
+`/admin`
+
+Examples:
+- `/admin/dashboard`
+- `/admin/products`
+- `/admin/ingredients`
+- `/admin/recipes`
+- `/admin/inventory`
+- `/admin/purchases`
+- `/admin/suppliers`
+- `/admin/transactions`
+- `/admin/expenses`
+- `/admin/cash`
+- `/admin/reports`
+- `/admin/users`
+- `/admin/settings`
+- `/admin/audit-logs`
+
+The Admin application manages configuration, operations, inventory, finance, reporting, and user permissions.
+
+Admin pages must not reuse the POS layout in a way that forces administrative navigation into the checkout interface.
+
+### B. Dedicated POS application
+
+Suggested route prefix:
+
+`/pos`
+
+Examples:
+- `/pos`
+- `/pos/checkout`
+- `/pos/transactions`
+- `/pos/transactions/[id]`
+- `/pos/shift`
+- `/pos/settings`
+
+The POS application is a focused cashier interface.
+
+It must not display administrative navigation, ingredient management, recipe editing, supplier management, user administration, or general financial configuration.
+
+The POS must have its own layout, navigation, and workflow.
+
+Authorized users can navigate to the Admin application through a separate, permission-checked entry point. Do not show that entry point to users who do not have Admin access.
+
+### C. Shared application services
+
+Admin and POS may share:
+
+- Authentication services.
+- Product and pricing repositories.
+- Inventory services.
+- Sales and payment domain models.
+- Receipt rendering utilities.
+- Synchronization services.
+- Permission checking.
+- Audit logging.
+
+Share underlying services and reusable components where appropriate, but do not merge the two application layouts.
+
+### D. Independent authorization
+
+Separate layouts are not sufficient security.
+
+Enforce access control on the server and in database RLS policies.
+
+A cashier must not be able to access administrative data simply by entering an Admin URL or calling an API directly.
+
+Define and enforce permissions for every protected action.
+
+---
+
+## 4. MOBILE-FIRST DESIGN SYSTEM
+
+Design mobile screens first, then progressively enhance the layout for larger devices.
+
+Do not design desktop pages first and merely shrink them for mobile.
+
+### A. General design principles
+
+- Use a clean, professional beverage-shop ERP interface.
+- Use Indonesian as the default UI language.
+- Use IDR formatting, for example `Rp15.000`.
+- Use Asia/Jakarta timezone for displayed dates and times.
+- Ensure accessible contrast and readable typography.
+- Use touch-friendly controls, generally at least 44 × 44 CSS pixels where practical.
+- Use responsive spacing, typography, tables, dialogs, and navigation.
+- Support portrait mobile layouts.
+- Avoid horizontal overflow.
+- Provide clear loading, empty, error, success, offline, and synchronization states.
+- Use confirmation dialogs for destructive or financially consequential actions.
+- Avoid unnecessary animations and decorative elements that slow down POS workflows.
+
+### B. Mobile Admin layout
+
+On mobile:
+
+- Use a compact header with page title and relevant actions.
+- Use a drawer, compact navigation menu, or bottom navigation for frequently used Admin sections.
+- Present complex tables as responsive cards or intentionally scrollable data tables.
+- Use mobile-friendly forms with appropriate input types.
+- Keep filters accessible without consuming excessive vertical space.
+- Use bottom sheets or mobile-friendly dialogs when suitable.
+- Avoid displaying too many dashboard cards in one row.
+- Ensure important totals remain visible and understandable.
+
+On tablet and desktop:
+
+- Use a collapsible sidebar.
+- Provide wider data tables and multi-column forms where useful.
+- Use dashboard grids and analytical charts.
+- Preserve the same information architecture and permissions.
+
+### C. Dedicated mobile-first POS layout
+
+The POS must prioritize fast checkout on mobile.
+
+Recommended layout:
+
+1. Compact top bar showing business identity, cashier, shift status, connection status, and cart access.
+2. Search field.
+3. Horizontally scrollable product categories.
+4. Responsive product grid.
+5. Dedicated cart panel or drawer.
+6. Clear subtotal, discount, total, payment status, and checkout action.
+7. Clear offline and synchronization indicators.
+
+On small screens:
+
+- Show product selection as the primary view.
+- Open the cart as a drawer, bottom sheet, or dedicated checkout screen.
+- Keep the checkout action easy to reach.
+- Avoid requiring the cashier to scroll past a long product list to find the total.
+- Support touchscreen use without hover interactions.
+- Prevent accidental duplicate checkout submissions.
+
+On tablet and desktop:
+
+- Use a product selection panel and a persistent or adjacent cart panel when space permits.
+- Keep totals and checkout actions visible.
+- Support keyboard navigation and barcode scanner input when available.
+
+The POS must remain simple and fast even when the catalog becomes large.
+
+---
+
+## 5. AUTHENTICATION, ROLES, AND PERMISSIONS
+
+Implement authentication using Supabase Auth.
+
+Support configurable roles, including:
+
+- Owner / Administrator.
+- Manager.
+- Cashier.
+- Inventory Staff.
+- Finance Staff.
+
+Create a permission matrix covering at least:
+
+- Access Admin.
+- Access POS.
+- View sales.
+- Create sales.
+- Confirm payments.
+- Apply discounts.
+- Void transactions.
+- Process refunds.
+- Reprint receipts.
+- Manage products and prices.
+- Manage recipes.
+- Receive purchases.
+- Adjust inventory.
+- View purchase costs.
+- Manage expenses.
+- Reconcile cash.
+- View financial reports.
+- Manage users and permissions.
+- Change business settings.
+- View audit logs.
+
+Use least-privilege defaults.
+
+Cashiers should receive POS access only unless explicitly granted additional permissions.
+
+Inventory staff should not automatically receive financial administration permissions.
+
+Enforce permissions in server actions, API routes, database functions, and RLS policies.
+
+Do not rely on hiding navigation items or buttons as the only access-control mechanism.
+
+Document secure initial-owner account creation. Do not expose service-role credentials to the browser.
+
+---
+
+## 6. DASHBOARD
+
+Build an Admin dashboard using real persisted data.
+
+Include:
+
+- Gross sales.
+- Discounts.
+- Refunds.
+- Net sales.
+- Estimated or finalized COGS, clearly labeled.
+- Gross profit.
+- Operating expenses.
+- Net profit, with a documented calculation policy.
+- Transaction count.
+- Average transaction value.
+- Best-selling beverages.
+- Low-stock ingredients and packaging.
+- Inventory valuation.
+- Recent stock movements.
+- Cash balance by account.
+- Payment method breakdown.
+- Open cashier shifts.
+- Unconfirmed payments, if supported by the selected workflow.
+- Pending synchronization count.
+- Daily, weekly, monthly, and custom-period charts.
+
+All figures must come from database queries and consistent business definitions.
+
+Distinguish revenue from cash received, profit from cash balance, and estimated profit from finalized accounting results.
+
+---
+
+## 7. PRODUCT AND MENU MANAGEMENT
+
+Implement product and menu administration.
+
+Support:
+
+- Categories.
+- Product names and descriptions.
+- SKU and optional barcode.
+- Product images.
+- Variants and sizes.
+- Selling prices.
+- Optional modifiers and add-ons.
+- Active/inactive status.
+- Out-of-stock availability.
+- Stock tracking configuration.
+- Price history.
+- Tax configuration.
+- Recipe association.
+- Estimated cost and gross margin.
+
+Do not hardcode products, prices, or categories in frontend components.
+
+Changes to prices must be auditable and have a defined effective date.
+
+For an offline checkout, use the locally available catalog and price snapshot. Apply the configured policy for stale prices when synchronization occurs.
+
+Do not silently rewrite a completed transaction's original selling price.
+
+---
+
+## 8. RECIPE MANAGEMENT AND BEVERAGE COSTING
+
+Implement a recipe/BOM system for made-to-order drinks.
+
+Each recipe must support:
+
+- Finished product and variant.
+- Ingredient lines.
+- Ingredient quantity per serving.
+- Stock unit and recipe unit.
+- Unit conversion.
+- Recipe version.
+- Effective date.
+- Optional yield and preparation loss.
+- Packaging consumption.
+- Modifier and topping consumption.
+- Theoretical cost per serving.
+
+Support conversions such as:
+
+- kg to g.
+- L to ml.
+- Pack to piece, when the pack quantity is explicitly defined.
+- Ingredient-specific mass-to-volume conversion when a verified density is configured.
+
+Never assume 1 g equals 1 ml.
+
+Recipe costing must use the cost layers of ingredients actually consumed under FIFO.
+
+A recipe's estimated current cost may use the next available FIFO layers. The actual COGS of a completed sale must be based on the inventory layers consumed by that sale.
+
+When a recipe changes, create a new version rather than overwriting the historical recipe definition.
+
+Persist enough information to reproduce historical costing, including recipe version, ingredient consumption, batch allocations, and actual cost.
+
+---
+
+## 9. FIFO INVENTORY — STRICT REQUIREMENT
+
+Implement **First In, First Out (FIFO)** as the inventory valuation and stock-consumption method.
+
+Do not use Weighted Average Cost (WAC) as the active costing method in this implementation.
+
+### A. FIFO principle
+
+When stock is consumed, allocate quantities from the oldest eligible receipt batch with available stock first.
+
+Each stock receipt must create a traceable inventory cost layer.
+
+Each layer should record:
+
+- Ingredient or stocked item.
+- Stock location.
+- Supplier or source document where applicable.
+- Purchase order and goods receipt references.
+- Receipt date and time.
+- Quantity received.
+- Remaining quantity.
+- Unit of measure.
+- Unit acquisition cost.
+- Allocated landed cost where configured.
+- Lot or batch number where available.
+- Expiry date where applicable.
+- Creation and posting references.
+
+Define a deterministic ordering rule, such as receipt posting timestamp followed by a stable unique identifier.
+
+For perishable ingredients, support expiry tracking and reporting. Do not silently mix expiry-based FEFO with FIFO. If an FEFO policy is later added, treat it as a separate, explicitly configured stock-rotation policy.
+
+### B. Stock consumption
+
+For every completed sale:
+
+1. Load the applicable recipe version.
+2. Calculate required ingredient and packaging quantities.
+3. Lock or otherwise safely serialize the affected inventory records.
+4. Find the oldest eligible inventory layers.
+5. Allocate consumption across layers until the required quantity is satisfied.
+6. Record each layer allocation.
+7. Decrease available stock.
+8. Create immutable stock movement records.
+9. Calculate actual ingredient and packaging COGS from the allocated layer costs.
+10. Commit the sale, payment state, stock movements, allocations, and cost snapshots atomically where cloud execution is involved.
+
+Use a PostgreSQL transaction or an appropriately designed database function for the cloud posting workflow.
+
+Prevent concurrent sales from consuming the same stock twice.
+
+Never rely on client-side inventory calculations as the source of truth.
+
+### C. FIFO allocation example
+
+Assume the inventory has:
+
+- Batch A: 500 g received first at Rp100 per gram.
+- Batch B: 300 g received later at Rp120 per gram.
+
+A sale consumes 600 g.
+
+The allocation must be:
+
+- 500 g from Batch A = Rp50.000.
+- 100 g from Batch B = Rp12.000.
+- Total COGS = Rp62.000.
+- Remaining Batch B = 200 g.
+
+The application must calculate this dynamically from actual inventory layers, not from hardcoded examples.
+
+### D. Insufficient inventory
+
+By default, reject the posting of a sale if required stock cannot be allocated.
+
+If the business enables a negative-stock override, require explicit authorization and record the exception in the audit log.
+
+Never silently create negative FIFO layers or invent a cost for unavailable stock.
+
+For offline sales, clearly distinguish between locally accepted provisional transactions and server-confirmed posted transactions. Apply an explicit policy for insufficient stock discovered during synchronization.
+
+### E. Stock movements and adjustments
+
+All inventory changes must create auditable movement records, including:
+
+- Opening inventory.
+- Purchase receipts.
+- Sales consumption.
+- Wastage.
+- Expired goods.
+- Purchase returns.
+- Supplier return shipments.
+- Stock transfers.
+- Physical count adjustments.
+- Authorized corrections.
+
+For an adjustment that reduces stock, allocate the reduction to FIFO layers and preserve the cost of the layers removed.
+
+For a purchase return, retain the original receipt-layer reference where possible and record the corresponding cost reversal.
+
+For a stock transfer, preserve the source layer's cost and batch traceability at the destination.
+
+Never edit posted stock movements directly. Correct errors through reversing or adjusting entries.
+
+### F. Inventory valuation and COGS
+
+Implement:
+
+- Current on-hand quantity.
+- Available quantity.
+- Reserved quantity if reservations are implemented.
+- Remaining value by FIFO layer.
+- Inventory valuation report.
+- FIFO consumption history.
+- Cost of goods sold by transaction.
+- Ingredient consumption by product.
+- Stock discrepancy reports.
+- Waste and expiry reports.
+
+The remaining inventory value must be derived from the quantities and unit costs of the remaining layers.
+
+Historical COGS must not change when a new purchase is received at a different price.
+
+Handle supplier discounts, shipping costs, and other landed costs through a documented allocation policy. Avoid applying the same cost twice.
+
+---
+
+## 10. PURCHASING AND SUPPLIERS
+
+Implement:
+
+- Supplier directory.
+- Purchase orders.
+- Purchase order items.
+- Goods receipts.
+- Purchase invoices.
+- Supplier payments.
+- Purchase returns.
+- Partial deliveries.
+- Purchase history.
+- Outstanding supplier balances.
+- Cost and unit conversions.
+- Purchase documents and attachments where needed.
+
+Creating a purchase order must not increase stock.
+
+Only posting an accepted goods receipt should increase inventory and create new FIFO cost layers.
+
+When a purchase is received:
+
+1. Validate received quantities.
+2. Record actual accepted quantities.
+3. Determine actual acquisition cost.
+4. Apply the documented landed-cost policy.
+5. Create receipt-layer records.
+6. Create corresponding stock movements.
+7. Update supplier and purchase records.
+8. Commit the operation atomically.
+
+Handle cancelled and reversed receipts through explicit reversal operations.
+
+---
+
+## 11. DEDICATED POS AND SALES WORKFLOW
+
+Implement a fast, mobile-first cashier workflow.
+
+### Product selection
+
+- Search products.
+- Browse categories.
+- Select variants and sizes.
+- Add modifiers and toppings.
+- Adjust quantities.
+- Add line notes.
+- Remove items before checkout.
+- View current availability.
+- View a cart summary.
+
+### Cart and checkout
+
+- Calculate item totals.
+- Apply authorized discounts.
+- Calculate configured taxes.
+- Calculate final total.
+- Record cashier and shift.
+- Generate a unique transaction number.
+- Prevent accidental duplicate checkout.
+- Preserve the selling-price snapshot.
+- Record transaction time.
+- Support an optional customer reference.
+
+Use server-side calculations for authoritative cloud posting. During offline operation, calculate a provisional local result and validate it during synchronization.
+
+### Transaction statuses
+
+Define clear statuses, including the appropriate equivalents of:
+
+- Draft.
+- Pending payment.
+- Payment confirmed.
+- Completed.
+- Void.
+- Partially refunded.
+- Refunded.
+- Pending synchronization.
+- Synchronization failed.
+- Conflict requiring resolution.
+
+Do not treat payment status and synchronization status as the same field.
+
+Define valid status transitions and prevent invalid transitions.
+
+### Transaction history
+
+POS users with appropriate permissions can:
+
+- View recent transactions.
+- Search by transaction number.
+- Filter by date or status.
+- View transaction details.
+- Reprint receipts.
+- Confirm eligible payments.
+- Initiate an authorized void or refund workflow.
+
+Do not expose administrative reports or configuration screens in the POS layout.
+
+---
+
+## 12. MANUAL PAYMENT CONFIRMATION — NO PAYMENT GATEWAY
+
+**Do not integrate any payment gateway or automated payment-processing API.**
+
+Do not require:
+
+- Payment gateway credentials.
+- QRIS acquiring APIs.
+- Bank APIs.
+- E-wallet APIs.
+- Automatic bank transaction verification.
+
+The system must record payment information and allow an authorized cashier to confirm payment manually.
+
+### A. Payment methods
+
+Support configurable methods such as:
+
+- Cash.
+- QRIS.
+- Bank transfer.
+- E-wallet.
+- Other.
+
+These are recording categories only. The application does not process the payment electronically.
+
+### B. Manual payment workflow
+
+1. The cashier reviews the final transaction amount.
+2. The customer pays using the selected external method.
+3. The cashier verifies the payment independently.
+4. The cashier records the payment method and amount.
+5. The cashier explicitly confirms the payment.
+6. The application records the confirmer, timestamp, amount, method, and any permitted reference.
+7. The transaction becomes paid or completed according to the configured workflow.
+8. The receipt displays the correct payment status.
+
+For cash payments, calculate the amount received and change.
+
+For QRIS and transfers, the cashier must verify the payment outside the application before marking it confirmed.
+
+Allow pending payment only when the business workflow permits it.
+
+Do not automatically confirm QRIS or bank transfers simply because the cashier selected that method.
+
+### C. Payment records
+
+Store:
+
+- Payment ID.
+- Transaction ID.
+- Method.
+- Amount.
+- Status.
+- Confirmation timestamp.
+- Confirming user.
+- Optional external reference.
+- Optional notes.
+- Audit history.
+
+Do not store card PINs, passwords, CVVs, or other payment credentials.
+
+### D. Offline payment handling
+
+When offline, allow the cashier to record a locally confirmed payment only if permitted by the configured policy.
+
+Clearly label that record as locally saved and not yet cloud-synchronized.
+
+On synchronization, validate the record and preserve the original local event and its audit trail.
+
+If an offline payment conflicts with a server-side transaction state, do not silently overwrite either record. Mark it for explicit resolution.
+
+---
+
+## 13. THERMAL RECEIPT PRINTING
+
+Implement real receipt printing for thermal receipt printers.
+
+### A. Required paper sizes
+
+Support:
+
+- 58 mm thermal paper.
+- 80 mm thermal paper.
+
+Make the receipt width configurable in POS or authorized settings.
+
+Use print-specific CSS with `@media print` and `@page`.
+
+Do not print the entire ERP dashboard when the cashier requests a receipt.
+
+### B. Receipt content
+
+The receipt should support:
+
+- Caozy business name.
+- Configurable business address and contact details.
+- Receipt or transaction number.
+- Date and time in Asia/Jakarta.
+- Cashier identifier or display name.
+- Item names.
+- Variants and modifiers.
+- Quantities.
+- Unit prices.
+- Line totals.
+- Subtotal.
+- Discounts.
+- Tax, when configured.
+- Grand total.
+- Payment method.
+- Payment status.
+- Cash received and change, when applicable.
+- Optional customer-facing footer.
+- Optional return or transaction policy.
+
+Keep the receipt compact, readable, and appropriate for thermal printers.
+
+Handle long product names, line wrapping, quantities, and currency alignment.
+
+Avoid unnecessary images, backgrounds, large margins, and color-dependent styling.
+
+### C. Printing workflow
+
+Provide:
+
+- Print receipt after a completed checkout.
+- Print preview where appropriate.
+- Manual reprint from transaction history.
+- Configurable 58 mm or 80 mm paper width.
+- Receipt-specific print CSS.
+- Browser print-dialog fallback.
+- Clear print instructions.
+
+The system must not claim that a receipt physically printed merely because `window.print()` was invoked.
+
+### D. Printer compatibility
+
+Support standard browser printing through the operating system's installed printer.
+
+Where supported, allow a dedicated POS device to use a compatible ESC/POS printing adapter.
+
+Keep ESC/POS support optional and isolated behind a printer interface.
+
+Do not assume every browser can print silently or access a USB/Bluetooth printer directly.
+
+Document the distinction between:
+
+- Browser print dialog.
+- OS-managed thermal printing.
+- Direct ESC/POS printing through a compatible local bridge or device integration.
+
+Do not require a payment gateway or printer cloud service.
+
+### E. Reprinting and audit
+
+Reprinting must not create a new sale or duplicate payment.
+
+Log reprints when appropriate.
+
+Preserve the original transaction totals and receipt data.
+
+If the receipt is a reprint, optionally display a configurable "SALINAN" label without changing the transaction.
+
+---
+
+## 14. INVENTORY MANAGEMENT
+
+Implement an inventory module for:
+
+- Raw ingredients.
+- Packaging materials.
+- Finished goods.
+- Optional non-stock products.
+- Consumables and supplies.
+
+Support:
+
+- Stock receipt.
+- Stock issue.
+- FIFO layer allocations.
+- Stock adjustment.
+- Waste and spoilage.
+- Expiry tracking.
+- Stock transfers.
+- Physical stock counts.
+- Minimum-stock thresholds.
+- Stock movement history.
+- Inventory valuation.
+- Low-stock alerts.
+- Supplier and lot traceability.
+
+Use decimal quantities where necessary.
+
+Support kg, g, L, ml, pcs, packs, and configurable units.
+
+Every inventory change must have a corresponding movement and, where relevant, FIFO allocation records.
+
+Never let users edit calculated on-hand balances directly.
+
+---
+
+## 15. CASH MANAGEMENT AND FINANCIAL REPORTING
+
+Implement:
+
+- Cash accounts.
+- Bank accounts.
+- Opening balances.
+- Cash receipts.
+- Cash expenses.
+- Owner capital contributions.
+- Owner withdrawals.
+- Inter-account transfers.
+- Supplier payments.
+- Refunds.
+- Cashier shifts.
+- Opening cash.
+- Expected closing cash.
+- Actual closing cash.
+- Cash variance.
+- Payment method reconciliation.
+- Daily cash reports.
+- Sales reports.
+- Gross profit reports.
+- Profit and loss reports.
+- Cash flow reports.
+
+Use a documented accounting policy.
+
+Do not treat capital contributions as revenue.
+
+Do not treat transfers between accounts as income or expenses.
+
+Do not recognize inventory purchases as COGS simply because the supplier was paid.
+
+Recognize COGS when the relevant inventory is consumed or sold, using actual FIFO layer allocations.
+
+Separate sales revenue, payment receipts, inventory value, expenses, and profit.
+
+Handle supplier liabilities and purchase invoices without double-counting inventory purchases as expenses.
+
+Make tax treatment configurable and do not hardcode a tax rate.
+
+Clearly label estimates versus finalized results.
+
+Use a ledger or equivalent auditable financial event model to ensure that reports reconcile with their source transactions.
+
+---
+
+## 16. LOCAL-FIRST OFFLINE ARCHITECTURE
+
+The application must support online use and offline recovery.
+
+### A. Local storage
+
+Use IndexedDB through Dexie.js for:
+
+- Cached products.
+- Cached variants and prices.
+- Permitted reference data.
+- Local sales drafts.
+- Offline transactions.
+- Local payment confirmation events.
+- Outbox mutations.
+- Synchronization metadata.
+- Required receipt snapshots.
+
+Use a service worker to cache the application shell and essential assets.
+
+Do not assume that a service worker automatically makes every API call or database operation work offline.
+
+### B. Outbox and synchronization
+
+Implement:
+
+- Stable client-generated IDs.
+- Unique operation IDs.
+- Idempotency keys.
+- Retry with exponential backoff.
+- Synchronization status.
+- Last successful synchronization timestamp.
+- Manual retry.
+- Conflict detection.
+- Error inspection.
+- Recovery after refresh or browser restart.
+- Server-side validation.
+- A safe synchronization protocol.
+
+Never create duplicate sales or stock deductions when a request is retried.
+
+Synchronize dependent records in a defined order.
+
+### C. Critical consistency rule
+
+**The browser must never be the authoritative source for shared inventory or finalized financial records.**
+
+When offline, sales and stock allocations may be provisional.
+
+When online, the server must validate and post the sale, payment state, FIFO consumption, cost allocations, and financial entries transactionally.
+
+If multiple devices sell while offline, each device may have a different local view of available inventory. The system must detect this and apply a documented conflict policy when reconnecting.
+
+Do not silently accept impossible stock deductions.
+
+### D. Local and cloud modes
+
+Document these operating modes:
+
+1. Cloud web application.
+2. Local development or self-hosted server.
+3. Offline PWA.
+
+Do not imply that a local development server is automatically accessible from other devices.
+
+Do not imply that IndexedDB is shared between devices.
+
+If the business requires multiple terminals to continue transacting offline against shared stock, identify the additional requirement for a local shared server or equivalent coordination service. Do not fake shared inventory using independent browser databases.
+
+### E. Unsynchronized data safety
+
+Display clear warnings for:
+
+- Pending offline transactions.
+- Unsynchronized payment events.
+- Failed synchronization.
+- Stock conflicts.
+- Local data that has not reached the cloud.
+
+Provide an export or recovery mechanism where practical.
+
+Document the risk of clearing browser data, losing a device, or browser storage eviction.
+
+---
+
+## 17. DATABASE SCHEMA
+
+Design a normalized PostgreSQL schema with foreign keys, indexes, constraints, and reproducible migrations.
+
+At minimum, evaluate and implement appropriate tables for:
+
+### Organization and access
+- organizations
+- business_settings
+- locations
+- profiles
+- memberships
+- roles
+- permissions
+- role_permissions
+
+### Catalog
+- categories
+- products
+- product_variants
+- product_modifiers
+- price_history
+- units_of_measure
+- unit_conversions
+
+### Ingredients and recipes
+- ingredients
+- recipes
+- recipe_versions
+- recipe_items
+- recipe_modifiers
+
+### Purchasing
+- suppliers
+- purchase_orders
+- purchase_order_items
+- goods_receipts
+- goods_receipt_items
+- supplier_invoices
+- supplier_payments
+- purchase_returns
+
+### FIFO inventory
+- stock_locations
+- stock_lots
+- inventory_cost_layers
+- inventory_layer_allocations
+- inventory_balances, if maintained as a safely derived or transactionally updated projection
+- stock_movements
+- stock_counts
+- stock_count_items
+- stock_transfers
+- stock_transfer_items
+- inventory_adjustments
+
+### POS and transactions
+- sales
+- sale_items
+- sale_item_modifiers
+- sale_cost_allocations
+- payments
+- refunds
+- voids
+- receipt_print_logs
+- shifts
+- cash_reconciliations
+
+### Finance
+- cash_accounts
+- cash_transactions
+- expense_categories
+- expenses
+- journal_entries
+- journal_entry_lines
+
+### Reliability and audit
+- audit_logs
+- sync_operations
+- idempotency_keys
+- record_versions, or an equivalent concurrency mechanism.
+
+Adjust the schema to avoid unnecessary duplication.
+
+Use appropriate numeric precision for inventory quantities and unit costs.
+
+Use immutable transaction identifiers and unique constraints where needed.
+
+Every business record must be scoped to the correct organization and, when applicable, location.
+
+Document the source of truth for each calculated balance.
+
+Do not let independent client-side updates bypass stock movements or FIFO allocations.
+
+---
+
+## 18. DATABASE TRANSACTIONS AND INTEGRITY
+
+Implement server-side transactional operations for:
+
+- Posting a sale.
+- Allocating FIFO layers.
+- Deducting inventory.
+- Recording confirmed payment.
+- Posting a goods receipt.
+- Creating FIFO receipt layers.
+- Processing refunds.
+- Voiding eligible transactions.
+- Recording stock adjustments.
+- Closing a cashier shift.
+- Posting accounting entries.
+
+Where a workflow requires multiple dependent records, commit all related records atomically.
+
+If any step fails, roll back the entire cloud transaction.
+
+Use appropriate row locks, concurrency controls, and idempotency keys.
+
+A repeated request must return the existing result or a safe duplicate response rather than repeating the business operation.
+
+For refunds and voids, create explicit reversal records and reverse stock or financial entries according to the applicable business policy.
+
+Do not edit historical posted records to make a report look correct.
+
+---
+
+## 19. SECURITY, VALIDATION, AND AUDIT LOGGING
+
+Implement:
+
+- Supabase Auth.
+- Server-side authorization.
+- RLS policies.
+- Zod validation.
+- Input sanitization where appropriate.
+- Protected server actions and API routes.
+- Rate limiting where appropriate.
+- Secure session handling.
+- Environment variable validation.
+- Safe file uploads.
+- Audit logs.
+- Restricted access to supplier costs and financial reports.
+- Secure initial administrator provisioning.
+
+Never expose service-role keys in client-side bundles.
+
+Never trust client-supplied prices, discounts, taxes, stock balances, FIFO costs, permissions, or transaction totals.
+
+Recalculate and validate all critical financial and inventory operations on the server.
+
+Record the actor, timestamp, action, entity, entity ID, and relevant before/after information for important administrative and financial changes.
+
+Protect audit logs from ordinary users modifying or deleting them.
+
+---
+
+## 20. ADMIN REPORTS
+
+Implement responsive reports for:
+
+- Daily sales.
+- Monthly sales.
+- Product and category performance.
+- Transaction history.
+- Payment confirmation history.
+- Cashier and shift performance.
+- Inventory on hand.
+- FIFO inventory valuation.
+- FIFO layer history.
+- Ingredient consumption.
+- COGS by sale and product.
+- Gross profit.
+- Expenses.
+- Profit and loss.
+- Cash flow.
+- Payment method reconciliation.
+- Supplier purchases.
+- Accounts payable.
+- Stock discrepancies.
+- Waste and expiry.
+- Refunds and voids.
+- Synchronization failures.
+
+Provide date filters, search, sorting, pagination, and CSV export where appropriate.
+
+Ensure report definitions reconcile with source records.
+
+Make large tables usable on mobile without breaking the desktop experience.
+
+---
+
+## 21. SETTINGS
+
+Provide settings for:
+
+- Business name: Caozy.
+- Business address and contact details.
+- Currency: IDR.
+- Timezone: Asia/Jakarta.
+- Receipt paper size: 58 mm or 80 mm.
+- Receipt header and footer.
+- Optional logo.
+- Payment method labels.
+- Manual payment confirmation policy.
+- Tax settings.
+- Discount permissions.
+- Inventory costing method: FIFO.
+- Unit definitions.
+- Low-stock thresholds.
+- Stock locations.
+- User roles and permissions.
+- Shift settings.
+- Offline operation policy.
+- Printer configuration where supported.
+- Data export and backup settings.
+
+Do not hardcode tax rates or assume a specific printer model.
+
+Once FIFO is used for posted inventory, do not silently switch the costing method or recalculate historical COGS.
+
+---
+
+## 22. TESTING REQUIREMENTS
+
+### Unit tests
+
+Test:
+
+- Currency calculations.
+- Discounts and taxes.
+- Receipt totals.
+- Unit conversions.
+- Recipe costing.
+- FIFO layer ordering.
+- FIFO allocation across multiple batches.
+- Remaining inventory valuation.
+- COGS calculation.
+- Refund and void calculations.
+- Cash change.
+- Profit and loss definitions.
+- Transaction status transitions.
+
+### Database and integration tests
+
+Test:
+
+- Goods receipt creates the correct FIFO layers.
+- Purchase orders do not increase stock before receipt.
+- Sales consume the oldest available FIFO layers.
+- Concurrent sales cannot over-consume the same inventory.
+- Insufficient inventory rejects posting by default.
+- Repeated requests do not duplicate sales or stock movements.
+- Refunds create correct reversal records.
+- Payments cannot be confirmed by unauthorized users.
+- Cashier roles cannot access protected Admin functions.
+- RLS prevents cross-organization access.
+- Historical COGS remains unchanged after later purchases.
+- Reprints do not create duplicate sales or payments.
+- Synchronization conflicts are visible and recoverable.
+
+### Offline tests
+
+Test:
+
+- Creating a sale while offline.
+- Reloading the page with a pending sale.
+- Recording a local payment event.
+- Reconnecting and synchronizing.
+- Retrying a failed request.
+- Receiving a duplicate request.
+- Detecting insufficient cloud inventory.
+- Recovering from browser restart.
+- Preventing duplicate stock deductions.
+- Handling conflicts between multiple devices.
+
+### End-to-end scenarios
+
+1. Owner signs in and opens Admin.
+2. Owner creates an ingredient and product.
+3. Owner configures a recipe.
+4. Inventory staff receives a supplier delivery.
+5. The system creates FIFO layers with the correct acquisition costs.
+6. Cashier signs in to the dedicated POS.
+7. Cashier sells a beverage.
+8. The system consumes the oldest available FIFO layers.
+9. Cashier records and manually confirms the payment.
+10. Cashier prints a receipt.
+11. Cashier reprints the receipt from transaction history.
+12. Admin verifies stock, payment records, COGS, and gross profit.
+13. Cashier creates an offline transaction.
+14. The application reconnects and synchronizes safely.
+15. An unauthorized cashier is prevented from accessing Admin functions.
+
+Do not report tests as passed unless they have actually been executed and passed.
+
+---
+
+## 23. PROJECT STRUCTURE
+
+Use a maintainable structure appropriate to the existing repository.
+
+A possible organization is:
+
+- `app/(admin)/admin/...`
+- `app/(pos)/pos/...`
+- `app/(auth)/...`
+- `components/admin/...`
+- `components/pos/...`
+- `components/shared/...`
+- `features/products/...`
+- `features/recipes/...`
+- `features/inventory/...`
+- `features/purchasing/...`
+- `features/sales/...`
+- `features/payments/...`
+- `features/receipts/...`
+- `features/finance/...`
+- `features/sync/...`
+- `lib/auth/...`
+- `lib/database/...`
+- `lib/offline/...`
+- `lib/validation/...`
+- `lib/permissions/...`
+- `supabase/migrations/...`
+- `tests/unit/...`
+- `tests/integration/...`
+- `tests/e2e/...`
+
+This is a suggested organization, not a requirement to restructure an existing repository unnecessarily.
+
+Separate Admin and POS layouts while sharing domain services and reusable primitives.
+
+---
+
+## 24. ENVIRONMENT AND DEPLOYMENT
+
+Provide:
+
+- `.env.example` with placeholders only.
+- Supabase configuration instructions.
+- Database migrations.
+- Development seed data.
+- Local development setup.
+- Production deployment instructions.
+- PWA installation instructions.
+- Thermal printer setup instructions.
+- Database backup and restore instructions.
+- Data export and migration guidance.
+- Troubleshooting documentation.
+
+Never commit credentials or real secrets.
+
+Document local server requirements, network access, HTTPS, and firewall configuration when applicable.
+
+Clearly explain which features require internet connectivity and which can operate offline.
+
+---
+
+## 25. IMPLEMENTATION PHASES
+
+### Phase 1 — Repository inspection and foundation
+Inspect the existing codebase. Configure the architecture, authentication, Admin and POS route groups, database migrations, RLS, and mobile-first design system.
+
+### Phase 2 — Product catalog and units
+Implement products, variants, ingredients, categories, units, and conversion rules.
+
+### Phase 3 — FIFO inventory and purchasing
+Implement suppliers, purchase orders, goods receipts, FIFO layers, stock movements, inventory valuation, adjustments, and waste.
+
+### Phase 4 — Recipes and costing
+Implement versioned recipes, packaging consumption, theoretical costing, FIFO cost projections, and actual COGS snapshots.
+
+### Phase 5 — Dedicated POS
+Implement product selection, cart, checkout, transactions, shifts, manual payment confirmation, and receipt printing.
+
+### Phase 6 — Offline-first operation
+Implement IndexedDB, outbox, retry, idempotency, conflict detection, synchronization status, and recovery.
+
+### Phase 7 — Finance and reports
+Implement expenses, cash management, reconciliation, refunds, COGS, profit and loss, and exports.
+
+### Phase 8 — Security and verification
+Complete authorization checks, audit logs, unit tests, integration tests, end-to-end tests, and deployment documentation.
+
+At the end of each phase:
+
+- List files created or modified.
+- Summarize working functionality.
+- Report actual test results.
+- List known limitations.
+- Provide exact commands to run the application.
+- Continue to the next phase whenever feasible.
+
+Do not stop after creating a plan or a static UI.
+
+---
+
+## 26. DEFINITION OF DONE
+
+The application is not considered complete until:
+
+- Admin and POS have separate layouts and navigation.
+- Mobile-first usability is verified on small screens.
+- Role restrictions are enforced server-side and through database policies.
+- Products and ingredients persist in Supabase.
+- Purchases create correct FIFO inventory layers only when received.
+- Sales allocate inventory from the oldest eligible layers.
+- Stock movements and FIFO allocations are auditable.
+- COGS reflects the actual layers consumed.
+- Historical COGS remains stable after later purchases.
+- Manual payment confirmation works without a payment gateway.
+- Payment confirmation is authorized and auditable.
+- Thermal receipts print through a supported printer workflow.
+- Reprinting never duplicates sales or payments.
+- Offline sales survive reloads and can be synchronized safely.
+- Duplicate synchronization does not duplicate financial or inventory operations.
+- Conflicts and insufficient stock are handled explicitly.
+- Financial reports reconcile with their source records.
+- Database migrations and setup documentation are complete.
+- Critical automated tests pass.
+- Type checking, linting, and production build succeed.
+- Remaining limitations are explicitly documented.
+
+---
+
+## 27. START IMPLEMENTATION NOW
+
+First inspect the existing repository and report its current stack, application structure, database setup, and existing functionality.
+
+Then establish the smallest safe implementation plan and start Phase 1.
+
+Implement the Admin and POS separation at the architectural level from the beginning. Build the POS for mobile first, not as a reduced version of the Admin dashboard.
+
+Prioritize data integrity, FIFO correctness, manual payment confirmation, reliable thermal receipt printing, offline recovery, and security.
+
+Do not fabricate test results or claim production readiness without sufficient evidence.
