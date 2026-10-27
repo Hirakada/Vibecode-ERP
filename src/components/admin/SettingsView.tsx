@@ -17,6 +17,9 @@ import {
   AlertTriangle,
   RefreshCw,
   Crown,
+  Users,
+  Database,
+  ArrowRight,
 } from 'lucide-react';
 
 interface SettingsViewProps {
@@ -24,6 +27,7 @@ interface SettingsViewProps {
   onUpdateSettings: (newSettings: BusinessSettings) => void;
   currentUser: UserProfile;
   onSelectUser: (user: UserProfile) => void;
+  onNavigate?: (section: string) => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -31,6 +35,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onUpdateSettings,
   currentUser,
   onSelectUser,
+  onNavigate,
 }) => {
   const [formData, setFormData] = useState<BusinessSettings>({ ...settings });
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
@@ -111,41 +116,77 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
       )}
 
-      {/* Role / Owner Card */}
+      {/* User Management & Access Roles Card */}
       <div className="p-4 bg-[#232529] border border-stone-800 rounded-2xl space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
-            <Crown size={15} className="text-[#b6d333]" />
-            <span>Pengguna & Hak Akses Sistem</span>
+            <Users size={16} className="text-[#b6d333]" />
+            <span>Pengguna & Hak Akses Tim</span>
           </h2>
-          <span className="text-[11px] text-[#b6d333] font-semibold bg-[#b6d333]/15 px-2 py-0.5 rounded border border-[#b6d333]/30">
-            Owner Full Access
-          </span>
+          {onNavigate && (
+            <button
+              type="button"
+              onClick={() => onNavigate('users')}
+              className="text-xs font-bold text-[#b6d333] hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <span>Kelola Tim & Role</span>
+              <ArrowRight size={13} />
+            </button>
+          )}
         </div>
         <p className="text-xs text-stone-400">
-          Sistem saat ini dikonfigurasi khusus untuk satu pemilik (Owner) dengan hak akses penuh ke seluruh modul kasir POS dan admin operasional.
+          Konfigurasi akun staf, pilih template role (Owner, Manajer, Kasir, Gudang, Keuangan), atau sesuaikan izin granular dengan custom akses.
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-          {DEMO_USERS.map((u) => {
-            const isSelected = u.id === currentUser.id;
-            return (
-              <div
-                key={u.id}
-                className="p-3.5 rounded-xl border border-[#b6d333]/40 bg-[#b6d333]/10 text-white flex items-center justify-between"
+        <div className="flex items-center justify-between p-3 rounded-xl border border-stone-700/80 bg-stone-900/60">
+          <div className="flex items-center gap-2.5">
+            <span className="text-2xl">{currentUser.avatar || '👑'}</span>
+            <div>
+              <span className="text-xs font-bold text-white block">{currentUser.name}</span>
+              <span className="text-[11px] text-stone-400">{currentUser.email}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] bg-[#b6d333]/20 text-[#b6d333] font-black px-2 py-0.5 rounded border border-[#b6d333]/30 uppercase">
+              {currentUser.role}
+            </span>
+            {onNavigate && (
+              <button
+                type="button"
+                onClick={() => onNavigate('users')}
+                className="px-2.5 py-1 bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-bold rounded-lg border border-stone-700 cursor-pointer transition-colors"
               >
-                <div className="flex items-center gap-2.5">
-                  <span className="text-2xl">{u.avatar}</span>
-                  <div>
-                    <span className="text-xs font-black block leading-tight">{u.name}</span>
-                    <span className="text-[10px] text-stone-400">{u.email}</span>
-                  </div>
-                </div>
-                <span className="text-[10px] bg-stone-900 text-[#b6d333] font-black px-2 py-0.5 rounded border border-[#b6d333]/30 uppercase">
-                  {u.role}
-                </span>
-              </div>
-            );
-          })}
+                Atur Pengguna
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Raw Database Inspector & Backup Card */}
+      <div className="p-4 bg-[#232529] border border-stone-800 rounded-2xl space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+            <Database size={16} className="text-[#b6d333]" />
+            <span>Raw Database Inspector & Ekspor</span>
+          </h2>
+          <span className="text-[10px] bg-stone-800 text-stone-400 font-bold px-2 py-0.5 rounded border border-stone-700">
+            Owner & Admin
+          </span>
+        </div>
+        <p className="text-xs text-stone-400 leading-relaxed">
+          Inspeksi langsung 15 tabel Dexie IndexedDB (products, costLayers, recipes, sales, assets, expenses, auditLogs), filter JSON real-time, salin baris ke clipboard, dan unduh backup lengkap format JSON.
+        </p>
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          {onNavigate && (
+            <button
+              type="button"
+              onClick={() => onNavigate('raw-db')}
+              className="px-3.5 py-2 bg-[#b6d333] hover:bg-[#c7e63b] text-stone-950 font-black rounded-xl text-xs flex items-center gap-1.5 cursor-pointer shadow-md shadow-[#b6d333]/15 transition-all"
+            >
+              <Database size={14} />
+              <span>Buka Raw Database Viewer ↗</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -213,6 +254,32 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          {/* Brand Icon Customization */}
+          <div className="sm:col-span-2">
+            <label className="text-stone-300 font-bold block mb-1.5">
+              Ikon / Logo Brand Outlet (Owner & Admin)
+            </label>
+            <div className="flex flex-wrap items-center gap-2 p-2.5 bg-[#1a1b1e] border border-stone-800 rounded-xl">
+              {['🌿', '☕', '🍵', '🧋', '👑', '🥤', '🥑', '✨', '🍩', '🍋'].map((ic) => (
+                <button
+                  key={ic}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, storeIcon: ic })}
+                  className={`w-9 h-9 rounded-xl text-lg flex items-center justify-center cursor-pointer transition-all ${
+                    formData.storeIcon === ic
+                      ? 'bg-[#b6d333] text-stone-950 scale-110 shadow-md font-bold'
+                      : 'hover:bg-stone-800 text-white'
+                  }`}
+                >
+                  {ic}
+                </button>
+              ))}
+              <span className="text-[11px] text-stone-400 ml-2">
+                Ikon aktif: <strong className="text-[#b6d333] text-sm ml-1">{formData.storeIcon || '🌿'}</strong>
+              </span>
+            </div>
+          </div>
+
           <div>
             <label className="text-stone-300 font-bold block mb-1">Nama Usaha / Kedai</label>
             <input
@@ -267,10 +334,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </select>
           </div>
 
-          <div>
-            <label className="text-stone-300 font-bold block mb-1">
-              Pajak Restoran PB1 (%)
-            </label>
+          <div className="sm:col-span-2">
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-stone-300 font-bold block">
+                Pajak Restoran PB1 di Kasir POS (%)
+              </label>
+              <span className="text-[10px] text-[#b6d333] font-bold">Default 10%</span>
+            </div>
             <input
               type="number"
               min="0"
@@ -280,6 +350,29 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 setFormData({ ...formData, taxRatePercent: Number(e.target.value) })
               }
               className="w-full bg-[#1a1b1e] border border-stone-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#b6d333]"
+            />
+            <p className="text-[10px] text-stone-400 mt-1">
+              Harga menu minuman belum termasuk pajak. Ketika checkout di kasir POS, sistem akan menambahkan pajak {formData.taxRatePercent}% ke total pesanan.
+            </p>
+          </div>
+
+          <div>
+            <label className="text-stone-300 font-bold block mb-1">Header Cetak Struk</label>
+            <textarea
+              rows={2}
+              value={formData.receiptHeader}
+              onChange={(e) => setFormData({ ...formData, receiptHeader: e.target.value })}
+              className="w-full bg-[#1a1b1e] border border-stone-700 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-[#b6d333]"
+            />
+          </div>
+
+          <div>
+            <label className="text-stone-300 font-bold block mb-1">Footer / Ucapan Struk</label>
+            <textarea
+              rows={2}
+              value={formData.receiptFooter}
+              onChange={(e) => setFormData({ ...formData, receiptFooter: e.target.value })}
+              className="w-full bg-[#1a1b1e] border border-stone-700 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-[#b6d333]"
             />
           </div>
         </div>

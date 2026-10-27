@@ -18,7 +18,17 @@ interface CategoryManagerModalProps {
   onCategoriesChanged?: () => void;
 }
 
-const COMMON_EMOJIS = ['☕', '🍵', '🧋', '🍹', '🥛', '🍋', '🥤', '🥐', '🍰', '🍨', '🥑', '✨', '🍪', '🧇'];
+const COMMON_EMOJIS = ['☕', '🍵', '🧋', '🍹', '🥛', '🍋', '🥤', '🥐', '🍰', '🍨', '🥑', '✨', '🍪', '🧇', '🔥', '📦'];
+
+export const GRAB_GOJEK_PRESETS = [
+  { name: 'Menu Terlaris / Rekomendasi', icon: '🔥', description: 'Menu favorit dan best-seller pilihan pelanggan' },
+  { name: 'Kopi Susu Signature', icon: '☕', description: 'Espresso arabica dengan susu segar dan aren' },
+  { name: 'Artisan Tea & Matcha', icon: '🍵', description: 'Seduhan daun teh premium dan pure uji matcha' },
+  { name: 'Non-Coffee & Creamy', icon: '🥛', description: 'Minuman cokelat, red velvet, taro, dan susu creamy' },
+  { name: 'Fresh Fruits & Mocktail', icon: '🍋', description: 'Minuman segar buah dan soda mocktail' },
+  { name: 'Toast & Pastry', icon: '🥐', description: 'Roti panggang, croissant, dan kudapan gurih/manis' },
+  { name: 'Paket Hemat / Bundling', icon: '📦', description: 'Paket bundling minuman + snack promo hemat' },
+];
 
 export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
   isOpen,
@@ -213,6 +223,64 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
           >
             <X size={16} />
           </button>
+        </div>
+
+        {/* Grab & GoFood Presets Section */}
+        <div className="p-3 bg-stone-900/90 border border-stone-800 rounded-2xl space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-stone-300 flex items-center gap-1.5">
+              <span>🛵</span>
+              <span>Preset Standar GrabFood & GoFood</span>
+            </span>
+            <button
+              type="button"
+              onClick={async () => {
+                for (const p of GRAB_GOJEK_PRESETS) {
+                  const exists = categories.some(
+                    (c) => c.name.toLowerCase() === p.name.toLowerCase()
+                  );
+                  if (!exists) {
+                    await db.categories.add({
+                      id: `cat-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                      name: p.name,
+                      icon: p.icon,
+                      description: p.description,
+                      displayOrder: categories.length + 1,
+                      createdAt: new Date().toISOString(),
+                    });
+                  }
+                }
+                await loadCategories();
+                if (onCategoriesChanged) onCategoriesChanged();
+              }}
+              className="text-[10px] text-[#b6d333] hover:underline font-bold cursor-pointer"
+            >
+              + Impor Semua Standar Online
+            </button>
+          </div>
+          <p className="text-[10px] text-stone-400">
+            Klik salah satu kategori di bawah untuk mengisi formulir secara instan:
+          </p>
+          <div className="flex flex-wrap gap-1.5 pt-0.5">
+            {GRAB_GOJEK_PRESETS.map((preset) => (
+              <button
+                key={preset.name}
+                type="button"
+                onClick={() => {
+                  setEditingCategory(null);
+                  setName(preset.name);
+                  setIcon(preset.icon);
+                  setDescription(preset.description);
+                  setErrorMsg('');
+                  setIsAdding(true);
+                }}
+                className="px-2.5 py-1 rounded-lg bg-[#1a1b1e] hover:bg-stone-800 border border-stone-700/70 text-[11px] text-stone-200 hover:text-white flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <span>{preset.icon}</span>
+                <span>{preset.name}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Add / Edit Form Card */}

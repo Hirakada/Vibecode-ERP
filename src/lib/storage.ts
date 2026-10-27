@@ -15,6 +15,7 @@ import {
   StockMovement,
   UserProfile,
   MenuCategory,
+  BusinessAsset,
 } from '../types';
 
 export class CaozyDatabase extends Dexie {
@@ -33,6 +34,7 @@ export class CaozyDatabase extends Dexie {
   syncOutbox!: Table<SyncOperation, string>;
   stockMovements!: Table<StockMovement, string>;
   users!: Table<UserProfile, string>;
+  assets!: Table<BusinessAsset, string>;
 
   constructor() {
     super('CaozyBeverageERP_DB');
@@ -54,6 +56,9 @@ export class CaozyDatabase extends Dexie {
     });
     this.version(2).stores({
       categories: 'id, name, displayOrder',
+    });
+    this.version(3).stores({
+      assets: 'id, code, category, purchaseDate, condition',
     });
   }
 }
@@ -77,11 +82,12 @@ export const DEFAULT_SETTINGS: BusinessSettings = {
   address: 'Jl. Senopati No. 42, Kebayoran Baru, Jakarta Selatan',
   phone: '0812-3456-7890',
   receiptPaperWidth: '58mm',
-  taxRatePercent: 0, // PB1 default 0% or customizable
+  taxRatePercent: 10, // PB1 default 10% (POS +10% tax)
   receiptHeader: 'CAOZY KEDAI MINUMAN\nJakarta Selatan',
   receiptFooter: 'Terima kasih telah berkunjung!\nFollow IG: @caozy.id\nOwner: Hirakada',
   allowNegativeStock: false,
   offlineConfirmationAllowed: true,
+  storeIcon: '🌿',
 };
 
 // Clean slate initial data - ready for manual creation by Hirakada
@@ -118,6 +124,7 @@ export async function resetAllDataToCleanSlate(): Promise<void> {
   await db.sales.clear();
   await db.stockMovements.clear();
   await db.expenses.clear();
+  if (db.assets) await db.assets.clear();
   await db.shifts.clear();
   await db.auditLogs.clear();
   await db.users.clear();
@@ -157,6 +164,11 @@ export async function initializeDatabaseIfEmpty(): Promise<void> {
   const settingsCount = await db.settings.count();
   if (settingsCount === 0) {
     await db.settings.put({ ...DEFAULT_SETTINGS, id: 'global-settings' });
+  } else {
+    const existing = await db.settings.get('global-settings');
+    if (existing && (!existing.taxRatePercent || existing.taxRatePercent === 0)) {
+      await db.settings.update('global-settings', { taxRatePercent: 10 });
+    }
   }
 
   const shiftCount = await db.shifts.count();

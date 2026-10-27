@@ -3,6 +3,7 @@ import { db } from '../../lib/storage';
 import { Product, ProductVariant, MenuCategory } from '../../types';
 import { formatIDR } from '../../lib/currency';
 import { CategoryManagerModal } from './CategoryManagerModal';
+import { calculateRecommendedPrice, roundToNearest200 } from '../../utils/pricingCalculator';
 import {
   Coffee,
   CheckCircle,
@@ -15,6 +16,9 @@ import {
   Layers,
   Tag,
   FolderPlus,
+  Calculator,
+  ArrowRight,
+  TrendingUp,
 } from 'lucide-react';
 
 export const ProductsManager: React.FC = () => {
@@ -38,6 +42,12 @@ export const ProductsManager: React.FC = () => {
   const [active, setActive] = useState<boolean>(true);
   const [includeLargeVariant, setIncludeLargeVariant] = useState<boolean>(true);
   const [largeVariantDelta, setLargeVariantDelta] = useState<number>(4000);
+
+  // Pricing Recommendation State
+  const [showPricingCalc, setShowPricingCalc] = useState<boolean>(true);
+  const [calcHpp, setCalcHpp] = useState<number>(5000);
+  const [calcOpPercent, setCalcOpPercent] = useState<number>(15);
+  const [calcMarginPercent, setCalcMarginPercent] = useState<number>(25);
 
   const load = async () => {
     const prods = await db.products.toArray();
@@ -342,9 +352,12 @@ export const ProductsManager: React.FC = () => {
               <div className="pt-3 border-t border-stone-800 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] text-stone-500 block">Harga Jual Dasar</span>
+                    <span className="text-[10px] text-stone-500 block">Harga Dasar (Belum Pajak)</span>
                     <span className="text-base font-black text-[#b6d333]">
                       {formatIDR(product.basePrice)}
+                    </span>
+                    <span className="text-[10px] text-stone-400 block font-mono">
+                      +10% PB1 di POS: <strong className="text-emerald-400">{formatIDR(Math.round(product.basePrice * 1.1))}</strong>
                     </span>
                   </div>
                   <button
@@ -517,19 +530,149 @@ export const ProductsManager: React.FC = () => {
                 />
               </div>
 
+              {/* Pricing Calculator & Recommendation Widget */}
+              <div className="p-4 bg-stone-900/90 border border-stone-800 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Calculator size={16} className="text-[#b6d333]" />
+                    <span className="font-bold text-xs text-white">
+                      Kalkulator Rekomendasi Harga Jual (Pembulatan 200)
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPricingCalc(!showPricingCalc)}
+                    className="text-[11px] text-[#b6d333] hover:underline font-bold cursor-pointer"
+                  >
+                    {showPricingCalc ? 'Sembunyikan' : 'Buka Kalkulator'}
+                  </button>
+                </div>
+
+                {showPricingCalc && (
+                  <div className="space-y-3 pt-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                      <div>
+                        <label className="text-stone-400 text-[11px] block mb-1">
+                          HPP Bahan Baku (Rp)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="100"
+                          value={calcHpp || ''}
+                          onChange={(e) => setCalcHpp(Number(e.target.value) || 0)}
+                          placeholder="5000"
+                          className="w-full bg-[#1a1b1e] border border-stone-700 rounded-xl px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:border-[#b6d333]"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-stone-400 text-[11px] block mb-1">
+                          Biaya Operasional (% HPP)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={calcOpPercent}
+                          onChange={(e) => setCalcOpPercent(Number(e.target.value) || 0)}
+                          placeholder="15"
+                          className="w-full bg-[#1a1b1e] border border-stone-700 rounded-xl px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:border-[#b6d333]"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-stone-400 text-[11px] block mb-1">
+                          Target Margin (Min 10%)
+                        </label>
+                        <input
+                          type="number"
+                          min="10"
+                          max="90"
+                          value={calcMarginPercent}
+                          onChange={(e) =>
+                            setCalcMarginPercent(Math.max(10, Number(e.target.value) || 10))
+                          }
+                          placeholder="25"
+                          className="w-full bg-[#1a1b1e] border border-stone-700 rounded-xl px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:border-[#b6d333]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Calculated Summary Card */}
+                    {(() => {
+                      const rec = calculateRecommendedPrice(
+                        calcHpp,
+                        calcOpPercent,
+                        calcMarginPercent,
+                        10
+                      );
+                      return (
+                        <div className="p-3 bg-[#1a1b1e] border border-stone-800 rounded-xl space-y-2 text-xs">
+                          <div className="grid grid-cols-2 gap-2 text-[11px] text-stone-400">
+                            <div>
+                              <span>Biaya Ops ({rec.operationalPercent}% HPP): </span>
+                              <strong className="text-stone-200">{formatIDR(rec.operationalCost)}</strong>
+                            </div>
+                            <div>
+                              <span>Total Modal Dasar: </span>
+                              <strong className="text-stone-200">{formatIDR(rec.totalCostBase)}</strong>
+                            </div>
+                          </div>
+
+                          <div className="pt-2 border-t border-stone-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[11px] text-stone-300 font-bold">
+                                  Rekomendasi Harga Jual:
+                                </span>
+                                <span className="text-sm font-black text-[#b6d333]">
+                                  {formatIDR(rec.recommendedPrice)}
+                                </span>
+                                <span className="text-[10px] text-stone-400 bg-stone-800 px-1.5 py-0.5 rounded">
+                                  Kelipatan 200
+                                </span>
+                              </div>
+                              <span className="text-[10px] text-stone-400 block mt-0.5">
+                                Kasir POS (+10% PB1): <strong className="text-emerald-400 font-mono">{formatIDR(rec.estimatedPosGrandTotal)}</strong> (Margin: {rec.actualMarginPercent.toFixed(1)}%)
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => setBasePrice(rec.recommendedPrice)}
+                              className="px-3 py-1.5 bg-[#b6d333] hover:bg-[#c7e63b] text-stone-950 font-black rounded-xl text-xs flex items-center justify-center gap-1 cursor-pointer transition-colors shrink-0"
+                            >
+                              <span>Terapkan ({formatIDR(rec.recommendedPrice)})</span>
+                              <ArrowRight size={13} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+
               <div>
-                <label className="text-stone-300 font-bold block mb-1">
-                  Harga Jual Dasar (Regular) - Rp
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-stone-300 font-bold block">
+                    Harga Jual Dasar (Regular) - Rp
+                  </label>
+                  <span className="text-[10px] text-stone-400">
+                    Bisa input manual atau pakai tombol rekomendasi di atas
+                  </span>
+                </div>
                 <input
                   type="number"
                   min="0"
-                  step="500"
+                  step="200"
                   required
                   value={basePrice}
-                  onChange={(e) => setBasePrice(Number(e.target.value))}
+                  onChange={(e) => setBasePrice(Number(e.target.value) || 0)}
                   className="w-full bg-[#1a1b1e] border border-stone-700 rounded-xl px-3 py-2 text-white font-bold text-sm focus:outline-none focus:border-[#b6d333]"
                 />
+                <p className="text-[10px] text-stone-400 mt-1">
+                  * Harga ini belum termasuk pajak 10%. Ketika transaksi kasir POS, sistem otomatis menambahkan pajak PB1 10%.
+                </p>
               </div>
 
               {/* Varian Large */}

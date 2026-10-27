@@ -36,6 +36,7 @@ import {
   ArrowRight,
   Bluetooth,
   PlusCircle,
+  LogOut,
 } from 'lucide-react';
 
 interface PosLayoutProps {
@@ -43,6 +44,7 @@ interface PosLayoutProps {
   settings: BusinessSettings;
   onNavigateToAdmin?: () => void;
   onSwitchUser?: () => void;
+  onLogout?: () => void;
 }
 
 export const PosLayout: React.FC<PosLayoutProps> = ({
@@ -50,6 +52,7 @@ export const PosLayout: React.FC<PosLayoutProps> = ({
   settings,
   onNavigateToAdmin,
   onSwitchUser,
+  onLogout,
 }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
@@ -252,7 +255,8 @@ export const PosLayout: React.FC<PosLayoutProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-white text-sm tracking-wide flex items-center gap-1.5">
-                <span>caozy</span>
+                {settings.storeIcon && <span>{settings.storeIcon}</span>}
+                <span>{settings.businessName || 'Caozy Kedai Minuman'}</span>
                 <span className="text-[10px] bg-[#b6d333]/20 text-[#b6d333] border border-[#b6d333]/30 font-black px-1.5 py-0.2 rounded-sm uppercase">
                   POS
                 </span>
@@ -333,9 +337,21 @@ export const PosLayout: React.FC<PosLayoutProps> = ({
               type="button"
               onClick={onSwitchUser}
               className="text-xs p-1.5 rounded-xl bg-stone-800/80 hover:bg-stone-700 border border-stone-700/80 text-stone-300 cursor-pointer"
-              title="Profil Pengguna"
+              title="Profil Pengguna & Status Autentikasi"
             >
               {currentUser.avatar || '👑'}
+            </button>
+          )}
+
+          {/* Lock / Logout Session */}
+          {onLogout && (
+            <button
+              type="button"
+              onClick={onLogout}
+              className="p-1.5 text-stone-400 hover:text-red-400 rounded-xl bg-stone-800/80 hover:bg-stone-700 border border-stone-700/80 transition-colors cursor-pointer"
+              title="Kunci Layar Kasir / Logout"
+            >
+              <LogOut size={14} />
             </button>
           )}
         </div>

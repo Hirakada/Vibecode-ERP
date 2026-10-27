@@ -28,6 +28,8 @@ export interface UserProfile {
   email: string;
   role: Role;
   avatar?: string;
+  isCustomAccess?: boolean;
+  customPermissions?: Permission[];
 }
 
 export type UnitOfMeasure = 'g' | 'kg' | 'ml' | 'L' | 'pcs' | 'pack';
@@ -270,6 +272,39 @@ export interface Expense {
   description: string;
   paymentMethod: PaymentMethod;
   recordedBy: string;
+  assetId?: string; // Optional link to an asset purchase
+}
+
+export type AssetCategory =
+  | 'mesin_kopi'
+  | 'alat_bar'
+  | 'refrigerasi'
+  | 'elektronik_pos'
+  | 'furnitur'
+  | 'renovasi_dekorasi'
+  | 'kendaraan'
+  | 'lainnya';
+
+export type AssetCondition = 'prima' | 'butuh_servis' | 'rusak' | 'dijual' | 'dihapus';
+
+export interface BusinessAsset {
+  id: string;
+  code: string; // e.g. AST-01
+  name: string; // e.g. Mesin Espresso 2 Group
+  category: AssetCategory;
+  purchaseDate: string; // ISO date string
+  purchaseCost: number; // Harga perolehan aset
+  supplierName?: string; // Vendor / Toko
+  usefulLifeMonths: number; // Masa manfaat (bulan)
+  salvageValue: number; // Nilai sisa / residu
+  currentBookValue: number; // Nilai buku saat ini
+  monthlyDepreciation: number; // Beban penyusutan per bulan
+  accumulatedDepreciation: number; // Total akumulasi penyusutan
+  condition: AssetCondition;
+  location: string; // Lokasi penempatan
+  serialNumber?: string;
+  notes?: string;
+  expenseId?: string; // Link to Expense ID
 }
 
 export interface BusinessSettings {
@@ -283,6 +318,7 @@ export interface BusinessSettings {
   receiptFooter: string;
   allowNegativeStock: boolean;
   offlineConfirmationAllowed: boolean;
+  storeIcon?: string; // Brand icon / emoji customizable by Owner & Admin
 }
 
 export interface AuditLog {
