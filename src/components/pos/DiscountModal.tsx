@@ -402,8 +402,8 @@ export const DiscountModal: React.FC<DiscountModalProps> = ({
                   )}
 
                   <div className="flex items-center gap-1 text-[10px] text-stone-400 bg-stone-900/90 p-1.5 rounded-lg border border-stone-800">
-                    <HelpCircle size={12} className="text-amber-400 shrink-0" />
-                    <span>Demo PIN: Dewi (Manager): <strong>2345</strong> | Budi (Owner): <strong>1234</strong></span>
+                    <HelpCircle size={12} className="text-[#b6d333] shrink-0" />
+                    <span>PIN Supervisor: Hirakada (Owner): <strong>1234</strong></span>
                   </div>
                 </form>
               )}
@@ -437,7 +437,7 @@ export const DiscountModal: React.FC<DiscountModalProps> = ({
               type="button"
               onClick={handleApply}
               disabled={!isAuthorized || calculatedDiscount <= 0}
-              className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-stone-950 text-xs font-extrabold rounded-xl flex items-center gap-1.5 shadow-lg shadow-amber-500/20 active:scale-[0.99] transition-all cursor-pointer"
+              className="px-5 py-2.5 bg-[#b6d333] hover:bg-[#c7e63b] disabled:opacity-40 text-stone-950 text-xs font-black rounded-xl flex items-center gap-1.5 shadow-lg shadow-[#b6d333]/20 active:scale-[0.99] transition-all cursor-pointer"
             >
               <Check size={15} />
               <span>

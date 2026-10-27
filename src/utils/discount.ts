@@ -31,16 +31,10 @@ export interface SupervisorCredential {
 
 export const DEMO_SUPERVISORS: SupervisorCredential[] = [
   {
-    userId: 'usr-owner',
-    name: 'Budi Santoso',
+    userId: 'usr-hirakada',
+    name: 'Hirakada',
     role: 'owner',
     pin: '1234',
-  },
-  {
-    userId: 'usr-finance',
-    name: 'Dewi Lestari',
-    role: 'manager',
-    pin: '2345',
   },
 ];
 

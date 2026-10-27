@@ -74,18 +74,12 @@ test('isOverrideRequired: zero or empty discount never requires override', () =>
   assert.equal(isOverrideRequired(0, 'flat', 0, 'cashier'), false);
 });
 
-test('verifySupervisorPin: successfully authorizes valid owner and manager PINs', () => {
+test('verifySupervisorPin: successfully authorizes valid owner PIN', () => {
   // Owner PIN
   const ownerRes = verifySupervisorPin('1234');
   assert.equal(ownerRes.isValid, true);
-  assert.equal(ownerRes.approver?.name, 'Budi Santoso');
+  assert.equal(ownerRes.approver?.name, 'Hirakada');
   assert.equal(ownerRes.approver?.role, 'owner');
-
-  // Manager PIN
-  const mgrRes = verifySupervisorPin('2345');
-  assert.equal(mgrRes.isValid, true);
-  assert.equal(mgrRes.approver?.name, 'Dewi Lestari');
-  assert.equal(mgrRes.approver?.role, 'manager');
 });
 
 test('verifySupervisorPin: rejects invalid PINs or empty inputs', () => {

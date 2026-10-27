@@ -12,6 +12,7 @@ import { FinanceManager } from './FinanceManager';
 import { SettingsView } from './SettingsView';
 import { AuditLogsView } from './AuditLogsView';
 import { DailySalesReport } from './DailySalesReport';
+import { CaozyLogo } from '../shared/CaozyLogo';
 import {
   LayoutDashboard,
   Layers,
@@ -26,9 +27,8 @@ import {
   ShoppingBag,
   Menu,
   X,
-  User,
-  ArrowLeft,
   PieChart,
+  ShieldCheck,
 } from 'lucide-react';
 
 export type AdminSection =
@@ -69,10 +69,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     { id: 'purchases', label: 'Pembelian & Pemasok', icon: Truck, permission: 'receive_purchases' },
     { id: 'recipes', label: 'Resep Minuman (BOM)', icon: BookOpen, permission: 'manage_recipes' },
     { id: 'ingredients', label: 'Bahan Baku & Kemasan', icon: Package, permission: 'manage_products' },
-    { id: 'products', label: 'Menu Produk', icon: Coffee, permission: 'manage_products' },
+    { id: 'products', label: 'Menu Produk Minuman', icon: Coffee, permission: 'manage_products' },
     { id: 'transactions', label: 'Riwayat Transaksi POS', icon: Receipt, permission: 'view_sales' },
     { id: 'finances', label: 'Keuangan & Kasir', icon: DollarSign, permission: 'view_financial_reports' },
-    { id: 'settings', label: 'Pengaturan Toko', icon: Settings, permission: 'change_settings' },
+    { id: 'settings', label: 'Pengaturan Toko & Data', icon: Settings, permission: 'change_settings' },
     { id: 'audit-logs', label: 'Log Audit Sistem', icon: Shield, permission: 'view_audit_logs' },
   ];
 
@@ -82,21 +82,13 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   });
 
   return (
-    <div className="min-h-screen bg-stone-950 text-stone-100 flex flex-col md:flex-row font-sans">
+    <div className="min-h-screen bg-[#1a1b1e] text-stone-100 flex flex-col md:flex-row font-sans">
       {/* Sidebar for Desktop */}
-      <aside className="hidden md:flex w-64 bg-stone-900 border-r border-stone-800 flex-col justify-between shrink-0">
+      <aside className="hidden md:flex w-64 bg-[#232529] border-r border-[#353840] flex-col justify-between shrink-0">
         <div>
           {/* Logo & Brand */}
-          <div className="p-4 border-b border-stone-800 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-black">
-                C
-              </div>
-              <div>
-                <span className="font-extrabold text-sm tracking-wide text-white block">CAOZY ERP</span>
-                <span className="text-[10px] text-stone-400 font-medium">Beverage Operations</span>
-              </div>
-            </div>
+          <div className="p-4 border-b border-[#353840] flex items-center justify-between">
+            <CaozyLogo variant="badge" size="md" showText={true} />
           </div>
 
           {/* Nav Links */}
@@ -109,9 +101,9 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
                   key={item.id}
                   type="button"
                   onClick={() => setActiveSection(item.id)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-amber-500 text-stone-950 font-bold shadow-md shadow-amber-500/15'
+                      ? 'bg-[#b6d333] text-stone-950 font-black shadow-md shadow-[#b6d333]/20'
                       : 'text-stone-400 hover:text-stone-100 hover:bg-stone-800/60'
                   }`}
                 >
@@ -124,40 +116,47 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         </div>
 
         {/* Bottom Actions */}
-        <div className="p-4 border-t border-stone-800 space-y-3">
+        <div className="p-4 border-t border-[#353840] space-y-3">
           {/* Switch to POS button */}
           <button
             type="button"
             onClick={onNavigateToPos}
-            className="w-full bg-stone-800 hover:bg-stone-700 text-amber-400 border border-stone-700 font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 text-xs transition-colors shadow-sm"
+            className="w-full bg-[#b6d333]/15 hover:bg-[#b6d333]/25 text-[#b6d333] border border-[#b6d333]/40 font-black py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 text-xs transition-colors shadow-xs cursor-pointer"
           >
             <ShoppingBag size={15} />
             <span>Buka Kasir POS</span>
           </button>
 
           {/* User badge */}
-          <div className="p-2.5 bg-stone-950/60 rounded-xl border border-stone-800/80 flex items-center gap-2 text-xs">
-            <span className="text-base">{currentUser.avatar || '👤'}</span>
-            <div className="overflow-hidden">
-              <span className="font-bold text-white block truncate">{currentUser.name}</span>
-              <span className="text-[10px] text-amber-400/90 font-mono uppercase">{currentUser.role}</span>
+          <div className="p-2.5 bg-[#1a1b1e] rounded-xl border border-stone-800 flex items-center gap-2 text-xs">
+            <span className="text-base">{currentUser.avatar || '👑'}</span>
+            <div className="overflow-hidden flex-1">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-white truncate">{currentUser.name}</span>
+                <span className="text-[9px] bg-[#b6d333] text-stone-950 font-black px-1.5 py-0.2 rounded uppercase">
+                  Owner
+                </span>
+              </div>
+              <span className="text-[10px] text-stone-400 font-mono block">
+                Full Access
+              </span>
             </div>
           </div>
         </div>
       </aside>
 
       {/* Mobile Top Header */}
-      <header className="md:hidden bg-stone-900 border-b border-stone-800 p-3.5 flex items-center justify-between sticky top-0 z-30">
+      <header className="md:hidden bg-[#232529] border-b border-[#353840] p-3.5 flex items-center justify-between sticky top-0 z-30">
         <div className="flex items-center gap-2.5">
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2 bg-stone-800 text-stone-300 rounded-xl"
+            className="p-2 bg-stone-800 text-stone-300 rounded-xl cursor-pointer"
           >
             {isMobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
           <div>
-            <span className="font-extrabold text-sm text-white">CAOZY ERP</span>
+            <CaozyLogo variant="wordmark" size="sm" />
             <span className="text-[10px] text-stone-400 block font-medium">
               {navItems.find((n) => n.id === activeSection)?.label}
             </span>
@@ -167,7 +166,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         <button
           type="button"
           onClick={onNavigateToPos}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 text-stone-950 font-bold text-xs rounded-xl shadow-md shadow-amber-500/20"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-[#b6d333] text-stone-950 font-black text-xs rounded-xl shadow-md shadow-[#b6d333]/20 cursor-pointer"
         >
           <ShoppingBag size={14} />
           <span>Ke POS</span>
@@ -189,10 +188,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
                     setActiveSection(item.id);
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-amber-500 text-stone-950'
-                      : 'text-stone-300 bg-stone-900 border border-stone-800'
+                      ? 'bg-[#b6d333] text-stone-950'
+                      : 'text-stone-300 hover:bg-stone-800'
                   }`}
                 >
                   <Icon size={18} />
@@ -202,22 +201,26 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
             })}
           </nav>
 
-          <button
-            type="button"
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="w-full bg-stone-800 text-white font-bold py-3 rounded-xl text-xs mt-3"
-          >
-            Tutup Menu
-          </button>
+          <div className="pt-4 border-t border-stone-800">
+            <button
+              type="button"
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                onNavigateToPos();
+              }}
+              className="w-full bg-[#b6d333] text-stone-950 font-black py-3 rounded-xl flex items-center justify-center gap-2 text-xs"
+            >
+              <ShoppingBag size={16} />
+              <span>Buka Kasir POS</span>
+            </button>
+          </div>
         </div>
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 p-4 sm:p-6 overflow-y-auto max-w-7xl">
-        {activeSection === 'dashboard' && (
-          <AdminDashboard onNavigateDailyReport={() => setActiveSection('daily-sales')} />
-        )}
-        {activeSection === 'daily-sales' && <DailySalesReport settings={settings} />}
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
+        {activeSection === 'dashboard' && <AdminDashboard onNavigate={setActiveSection} />}
+        {activeSection === 'daily-sales' && <DailySalesReport />}
         {activeSection === 'inventory' && <FifoInventoryView />}
         {activeSection === 'purchases' && <PurchasingManager />}
         {activeSection === 'recipes' && <RecipeManager />}

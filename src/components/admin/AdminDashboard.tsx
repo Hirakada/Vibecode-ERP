@@ -16,10 +16,15 @@ import {
 } from 'lucide-react';
 
 interface AdminDashboardProps {
+  onNavigate?: (section: any) => void;
   onNavigateDailyReport?: () => void;
 }
 
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateDailyReport }) => {
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({
+  onNavigate,
+  onNavigateDailyReport,
+}) => {
+  const handleGoReport = onNavigateDailyReport || (() => onNavigate?.('daily-sales'));
   const [metrics, setMetrics] = useState({
     grossSales: 0,
     discounts: 0,
@@ -97,11 +102,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateDailyR
           </p>
         </div>
 
-        {onNavigateDailyReport && (
+        {handleGoReport && (
           <button
             type="button"
-            onClick={onNavigateDailyReport}
-            className="flex items-center gap-2 px-3.5 py-2 bg-stone-900 hover:bg-stone-800 text-amber-400 border border-stone-800 hover:border-amber-500/40 rounded-xl text-xs font-bold transition-all shadow-sm self-start sm:self-auto"
+            onClick={handleGoReport}
+            className="flex items-center gap-2 px-3.5 py-2 bg-[#232529] hover:bg-stone-800 text-[#b6d333] border border-stone-800 hover:border-[#b6d333]/40 rounded-xl text-xs font-black transition-all shadow-sm self-start sm:self-auto cursor-pointer"
           >
             <PieChart size={15} />
             <span>Laporan Penjualan & Top Menu</span>

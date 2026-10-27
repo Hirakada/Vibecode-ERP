@@ -72,9 +72,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           <div>
             <h2 className="text-base font-bold text-white">Konfirmasi Pembayaran Manual</h2>
             <div className="flex items-center gap-2 flex-wrap text-xs text-stone-400 mt-0.5">
-              <span>Total Tagihan: <strong className="text-amber-400 text-sm font-black">{formatIDR(grandTotal)}</strong></span>
+              <span>Total Tagihan: <strong className="text-[#b6d333] text-sm font-black">{formatIDR(grandTotal)}</strong></span>
               {discount && discount > 0 && (
-                <span className="text-[11px] bg-amber-500/10 text-amber-300 font-semibold px-2 py-0.5 rounded border border-amber-500/20">
+                <span className="text-[11px] bg-[#b6d333]/15 text-[#b6d333] font-semibold px-2 py-0.5 rounded border border-[#b6d333]/30">
                   Diskon: -{formatIDR(discount)}
                 </span>
               )}
@@ -83,7 +83,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           <button
             onClick={onClose}
             disabled={isProcessing}
-            className="p-2 text-stone-400 hover:text-white rounded-full bg-stone-800"
+            className="p-2 text-stone-400 hover:text-white rounded-full bg-stone-800 cursor-pointer"
           >
             <X size={18} />
           </button>
@@ -109,13 +109,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   setSelectedMethod('cash');
                   setCashGiven(grandTotal);
                 }}
-                className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
+                className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   selectedMethod === 'cash'
-                    ? 'border-amber-500 bg-amber-500/10 text-white'
+                    ? 'border-[#b6d333] bg-[#b6d333]/15 text-white'
                     : 'border-stone-800 bg-stone-800/40 text-stone-400 hover:border-stone-700'
                 }`}
               >
-                <Banknote size={20} className={selectedMethod === 'cash' ? 'text-amber-400' : ''} />
+                <Banknote size={20} className={selectedMethod === 'cash' ? 'text-[#b6d333]' : ''} />
                 <span className="text-xs font-bold">Tunai (Cash)</span>
               </button>
 
@@ -125,13 +125,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   setSelectedMethod('qris');
                   setManualVerified(false);
                 }}
-                className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
+                className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   selectedMethod === 'qris'
-                    ? 'border-amber-500 bg-amber-500/10 text-white'
+                    ? 'border-[#b6d333] bg-[#b6d333]/15 text-white'
                     : 'border-stone-800 bg-stone-800/40 text-stone-400 hover:border-stone-700'
                 }`}
               >
-                <QrCode size={20} className={selectedMethod === 'qris' ? 'text-amber-400' : ''} />
+                <QrCode size={20} className={selectedMethod === 'qris' ? 'text-[#b6d333]' : ''} />
                 <span className="text-xs font-bold">QRIS Statis</span>
               </button>
 
@@ -141,13 +141,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   setSelectedMethod('transfer');
                   setManualVerified(false);
                 }}
-                className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
+                className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   selectedMethod === 'transfer'
-                    ? 'border-amber-500 bg-amber-500/10 text-white'
+                    ? 'border-[#b6d333] bg-[#b6d333]/15 text-white'
                     : 'border-stone-800 bg-stone-800/40 text-stone-400 hover:border-stone-700'
                 }`}
               >
-                <Building size={20} className={selectedMethod === 'transfer' ? 'text-amber-400' : ''} />
+                <Building size={20} className={selectedMethod === 'transfer' ? 'text-[#b6d333]' : ''} />
                 <span className="text-xs font-bold">Transfer Bank</span>
               </button>
 
@@ -157,13 +157,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   setSelectedMethod('ewallet');
                   setManualVerified(false);
                 }}
-                className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
+                className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   selectedMethod === 'ewallet'
-                    ? 'border-amber-500 bg-amber-500/10 text-white'
+                    ? 'border-[#b6d333] bg-[#b6d333]/15 text-white'
                     : 'border-stone-800 bg-stone-800/40 text-stone-400 hover:border-stone-700'
                 }`}
               >
-                <Wallet size={20} className={selectedMethod === 'ewallet' ? 'text-amber-400' : ''} />
+                <Wallet size={20} className={selectedMethod === 'ewallet' ? 'text-[#b6d333]' : ''} />
                 <span className="text-xs font-bold">E-Wallet</span>
               </button>
             </div>
@@ -251,15 +251,15 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               </div>
 
               {/* Explicit Manual Verification Checkbox */}
-              <label className="flex items-start gap-2.5 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl cursor-pointer">
+              <label className="flex items-start gap-2.5 p-3 bg-[#b6d333]/10 border border-[#b6d333]/30 rounded-xl cursor-pointer">
                 <input
                   type="checkbox"
                   checked={manualVerified}
                   onChange={(e) => setManualVerified(e.target.checked)}
-                  className="mt-0.5 accent-amber-500 w-4 h-4 rounded"
+                  className="mt-0.5 accent-[#b6d333] w-4 h-4 rounded"
                 />
                 <span className="text-xs text-stone-300 leading-snug">
-                  <strong className="text-amber-400 block font-bold">Verifikasi Manual Kasir:</strong>
+                  <strong className="text-[#b6d333] block font-bold">Verifikasi Manual Kasir:</strong>
                   Saya telah memeriksa notifikasi rekening / bukti mutasi di perangkat dan memastikan dana telah masuk.
                 </span>
               </label>
@@ -274,7 +274,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Contoh: Pelanggan minta nota cap..."
-              className="w-full bg-stone-800/80 border border-stone-700 rounded-xl px-3 py-2 text-xs text-white placeholder-stone-600 focus:outline-none focus:border-amber-500"
+              className="w-full bg-stone-800/80 border border-stone-700 rounded-xl px-3 py-2 text-xs text-white placeholder-stone-600 focus:outline-none focus:border-[#b6d333]"
             />
           </div>
 
@@ -287,7 +287,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 (selectedMethod === 'cash' && !isSufficient) ||
                 (selectedMethod !== 'cash' && !manualVerified)
               }
-              className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:bg-stone-800 disabled:text-stone-600 text-stone-950 font-extrabold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 active:scale-[0.99] transition-all cursor-pointer"
+              className="w-full bg-[#b6d333] hover:bg-[#c7e63b] disabled:bg-stone-800 disabled:text-stone-600 text-stone-950 font-black py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-[#b6d333]/20 active:scale-[0.99] transition-all cursor-pointer"
             >
               <CheckCircle2 size={18} />
               <span>

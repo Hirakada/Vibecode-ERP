@@ -35,7 +35,14 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
     >
       {/* Header */}
       <div className="text-center pb-2 border-b border-dashed border-stone-400">
-        <h1 className="font-extrabold text-base tracking-wider uppercase">{settings.businessName}</h1>
+        <div className="flex justify-center mb-1">
+          <img
+            src="/assets/aistudio/Wordmark_ed2f6a03.svg"
+            alt="Caozy Logo"
+            className="h-6 object-contain brightness-0"
+          />
+        </div>
+        <h1 className="font-black text-sm tracking-wider uppercase">{settings.businessName}</h1>
         <p className="text-[10px] text-stone-600 whitespace-pre-line mt-0.5">{settings.address}</p>
         <p className="text-[10px] text-stone-600">Telp: {settings.phone}</p>
       </div>

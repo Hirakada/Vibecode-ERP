@@ -107,11 +107,20 @@ export interface ProductModifier {
   };
 }
 
+export interface MenuCategory {
+  id: string;
+  name: string;
+  icon?: string;
+  description?: string;
+  displayOrder?: number;
+  createdAt?: string;
+}
+
 export interface Product {
   id: string;
   code: string;
   name: string;
-  category: 'coffee' | 'tea' | 'non-coffee' | 'mocktail' | 'snack';
+  category: string;
   description: string;
   imageUrl?: string;
   basePrice: number;

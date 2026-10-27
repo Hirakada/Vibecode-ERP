@@ -180,33 +180,33 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   <button
                     type="button"
                     onClick={onOpenDiscountModal}
-                    className="w-full py-2 px-3 bg-stone-800/80 hover:bg-stone-800 border border-dashed border-stone-700/80 hover:border-amber-500/60 rounded-xl text-stone-300 hover:text-amber-300 text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer"
+                    className="w-full py-2 px-3 bg-stone-800/80 hover:bg-stone-800 border border-dashed border-stone-700/80 hover:border-[#b6d333]/60 rounded-xl text-stone-300 hover:text-[#b6d333] text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-1.5">
-                      <Tag size={13} className="text-amber-400" />
+                      <Tag size={13} className="text-[#b6d333]" />
                       <span>Tambah Diskon / Promo</span>
                     </div>
-                    <span className="text-[10px] bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded font-bold">
+                    <span className="text-[10px] bg-[#b6d333]/15 text-[#b6d333] px-1.5 py-0.5 rounded font-bold">
                       Diskon % / Rp
                     </span>
                   </button>
                 ) : (
-                  <div className="p-2.5 bg-amber-950/20 border border-amber-800/50 rounded-xl space-y-1">
+                  <div className="p-2.5 bg-[#b6d333]/10 border border-[#b6d333]/40 rounded-xl space-y-1">
                     <div className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-1.5">
-                        <Tag size={13} className="text-amber-400 shrink-0" />
-                        <span className="font-bold text-amber-300">
+                        <Tag size={13} className="text-[#b6d333] shrink-0" />
+                        <span className="font-bold text-[#b6d333]">
                           Diskon {discountInfo.type === 'percent' ? `${discountInfo.value}%` : 'Flat'}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="font-extrabold text-amber-400">
+                        <span className="font-extrabold text-[#b6d333]">
                           -{formatIDR(discount)}
                         </span>
                         <button
                           type="button"
                           onClick={onOpenDiscountModal}
-                          className="p-1 text-stone-400 hover:text-amber-300 rounded"
+                          className="p-1 text-stone-400 hover:text-[#b6d333] rounded cursor-pointer"
                           title="Ubah diskon"
                         >
                           <Edit3 size={12} />
@@ -214,7 +214,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                         <button
                           type="button"
                           onClick={onClearDiscount}
-                          className="p-1 text-stone-400 hover:text-red-400 rounded"
+                          className="p-1 text-stone-400 hover:text-red-400 rounded cursor-pointer"
                           title="Hapus diskon"
                         >
                           <X size={13} />
@@ -225,7 +225,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     <div className="flex items-center justify-between text-[10px] text-stone-400 pt-0.5">
                       <span className="truncate max-w-[180px]">{discountInfo.reason}</span>
                       {discountInfo.approvedBy && (
-                        <span className="flex items-center gap-1 text-emerald-400 font-semibold bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/40">
+                        <span className="flex items-center gap-1 text-[#b6d333] font-semibold bg-[#b6d333]/15 px-1.5 py-0.5 rounded border border-[#b6d333]/30">
                           <ShieldCheck size={11} />
                           <span>Otorisasi: {discountInfo.approvedBy}</span>
                         </span>
@@ -236,7 +236,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               </div>
 
               {discount > 0 && (
-                <div className="flex justify-between text-amber-400 text-xs font-semibold">
+                <div className="flex justify-between text-[#b6d333] text-xs font-semibold">
                   <span>Potongan Diskon:</span>
                   <span>-{formatIDR(discount)}</span>
                 </div>
@@ -251,16 +251,16 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
               <div className="flex justify-between text-sm font-extrabold text-white pt-2 border-t border-stone-800">
                 <span>Total Tagihan:</span>
-                <span className="text-amber-400 text-base">{formatIDR(grandTotal)}</span>
+                <span className="text-[#b6d333] text-base">{formatIDR(grandTotal)}</span>
               </div>
             </div>
 
             <button
               type="button"
               onClick={onProceedToPayment}
-              className="w-full bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold py-3.5 px-4 rounded-xl flex items-center justify-between shadow-lg shadow-amber-500/20 active:scale-[0.99] transition-all cursor-pointer"
+              className="w-full bg-[#b6d333] hover:bg-[#c7e63b] text-stone-950 font-black py-3.5 px-4 rounded-xl flex items-center justify-between shadow-lg shadow-[#b6d333]/20 active:scale-[0.99] transition-all cursor-pointer"
             >
-              <span className="font-extrabold">Bayar Sekarang</span>
+              <span className="font-black">Bayar Sekarang</span>
               <div className="flex items-center gap-1.5 font-black text-sm">
                 <span>{formatIDR(grandTotal)}</span>
                 <ArrowRight size={16} />

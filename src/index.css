@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+@theme {
+  --color-brand-lime: #b6d333;
+  --color-brand-lime-hover: #c7e63b;
+  --color-brand-lime-dark: #8fa81f;
+  --color-brand-leaf: #657035;
+  --color-brand-dark: #1a1b1e;
+  --color-brand-card: #232529;
+  --color-brand-card-hover: #292c32;
+  --color-brand-border: #353840;
+}
+
 @layer base {
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
