@@ -14,8 +14,11 @@ import {
 export interface CheckoutRequest {
   items: SaleItem[];
   subtotal: number;
+  itemDiscountTotal?: number;
   discount: number;
   discountInfo?: import('../types').DiscountInfo;
+  serviceFee?: number;
+  deliveryFee?: number;
   tax: number;
   grandTotal: number;
   cashierId: string;
@@ -134,8 +137,11 @@ export async function processSale(req: CheckoutRequest): Promise<{ sale: Sale; s
     shiftId: req.shiftId,
     items: req.items,
     subtotal: req.subtotal,
+    itemDiscountTotal: req.itemDiscountTotal || 0,
     discount: req.discount,
     discountInfo: req.discountInfo,
+    serviceFee: req.serviceFee || 0,
+    deliveryFee: req.deliveryFee || 0,
     tax: req.tax,
     grandTotal: req.grandTotal,
     status: 'completed',

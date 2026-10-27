@@ -91,6 +91,11 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
             {item.notes && (
               <div className="text-[10px] italic text-stone-500 pl-2">Catatan: {item.notes}</div>
             )}
+            {item.itemDiscount && item.itemDiscount > 0 ? (
+              <div className="text-[10px] text-emerald-800 font-medium pl-2">
+                Diskon Item: -{formatIDR(item.itemDiscount)}
+              </div>
+            ) : null}
             <div className="flex justify-between pt-0.5 pl-2">
               <span className="text-stone-600">
                 {item.quantity} x {formatIDR(item.unitPrice)}
@@ -107,11 +112,17 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
           <span>Subtotal:</span>
           <span>{formatIDR(sale.subtotal)}</span>
         </div>
+        {sale.itemDiscountTotal && sale.itemDiscountTotal > 0 ? (
+          <div className="flex justify-between text-stone-700">
+            <span>Diskon Item:</span>
+            <span>-{formatIDR(sale.itemDiscountTotal)}</span>
+          </div>
+        ) : null}
         {sale.discount > 0 && (
           <div>
             <div className="flex justify-between text-stone-700 font-medium">
               <span>
-                Diskon {sale.discountInfo?.type === 'percent' ? `(${sale.discountInfo.value}%)` : ''}:
+                Diskon Total Belanja {sale.discountInfo?.type === 'percent' ? `(${sale.discountInfo.value}%)` : ''}:
               </span>
               <span>-{formatIDR(sale.discount)}</span>
             </div>
@@ -128,6 +139,18 @@ export const ThermalReceipt: React.FC<ThermalReceiptProps> = ({
             )}
           </div>
         )}
+        {sale.serviceFee && sale.serviceFee > 0 ? (
+          <div className="flex justify-between">
+            <span>Biaya Layanan / Admin:</span>
+            <span>+{formatIDR(sale.serviceFee)}</span>
+          </div>
+        ) : null}
+        {sale.deliveryFee && sale.deliveryFee > 0 ? (
+          <div className="flex justify-between">
+            <span>Ongkos Kirim (Delivery):</span>
+            <span>+{formatIDR(sale.deliveryFee)}</span>
+          </div>
+        ) : null}
         {sale.tax > 0 && (
           <div className="flex justify-between">
             <span>Pajak (PB1):</span>

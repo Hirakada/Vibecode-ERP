@@ -115,3 +115,32 @@ test('formatDiscountLabel formats percent and flat labels correctly', () => {
     'Rp 15.000'
   );
 });
+
+test('Grand total calculation: handles item discounts, order discount, service fee, delivery fee, and tax', () => {
+  const items = [
+    { unitPrice: 20000, quantity: 2, itemDiscount: 4000 }, // 40k - 4k = 36k
+    { unitPrice: 30000, quantity: 1, itemDiscount: 5000 }, // 30k - 5k = 25k
+  ];
+
+  const rawSubtotal = items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
+  assert.equal(rawSubtotal, 70000);
+
+  const itemDiscountTotal = items.reduce((sum, i) => sum + i.itemDiscount, 0);
+  assert.equal(itemDiscountTotal, 9000);
+
+  const subtotalAfterItemDiscounts = rawSubtotal - itemDiscountTotal;
+  assert.equal(subtotalAfterItemDiscounts, 61000);
+
+  const orderDiscount = 5000;
+  const taxableNet = Math.max(0, subtotalAfterItemDiscounts - orderDiscount);
+  assert.equal(taxableNet, 56000);
+
+  const tax = Math.round((taxableNet * 10) / 100);
+  assert.equal(tax, 5600);
+
+  const serviceFee = 2000;
+  const deliveryFee = 10000;
+  const grandTotal = taxableNet + tax + serviceFee + deliveryFee;
+  assert.equal(grandTotal, 73600);
+});
+

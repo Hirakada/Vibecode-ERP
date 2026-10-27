@@ -35,6 +35,7 @@ export class CaozyDatabase extends Dexie {
   stockMovements!: Table<StockMovement, string>;
   users!: Table<UserProfile, string>;
   assets!: Table<BusinessAsset, string>;
+  purchaseOrders!: Table<import('../types').PurchaseOrder, string>;
 
   constructor() {
     super('CaozyBeverageERP_DB');
@@ -59,6 +60,9 @@ export class CaozyDatabase extends Dexie {
     });
     this.version(3).stores({
       assets: 'id, code, category, purchaseDate, condition',
+    });
+    this.version(4).stores({
+      purchaseOrders: 'id, poNumber, supplierId, orderDate, status',
     });
   }
 }

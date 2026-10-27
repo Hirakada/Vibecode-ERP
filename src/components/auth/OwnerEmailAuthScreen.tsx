@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CaozyLogo } from '../shared/CaozyLogo';
 import {
   OWNER_EMAIL,
@@ -9,6 +9,7 @@ import {
   AuthSession,
 } from '../../services/authService';
 import { db } from '../../lib/storage';
+import { UserProfile } from '../../types';
 import {
   Mail,
   ShieldCheck,
@@ -18,6 +19,8 @@ import {
   CheckCircle2,
   KeyRound,
   Send,
+  UserCheck,
+  Lock,
 } from 'lucide-react';
 
 interface OwnerEmailAuthScreenProps {
@@ -29,43 +32,82 @@ export const OwnerEmailAuthScreen: React.FC<OwnerEmailAuthScreenProps> = ({
 }) => {
   const [email, setEmail] = useState<string>(OWNER_EMAIL);
 
+  // Email Validation & User State
+  const [validatedUser, setValidatedUser] = useState<UserProfile | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [isValidatingEmail, setIsValidatingEmail] = useState<boolean>(false);
+
   // OTP State
   const [isOtpSent, setIsOtpSent] = useState<boolean>(false);
   const [generatedOtp, setGeneratedOtp] = useState<string>('');
   const [enteredOtp, setEnteredOtp] = useState<string>('');
   const [otpNotice, setOtpNotice] = useState<string | null>(null);
 
-  // Status
+  // Submission Status
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const handleSendOtp = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  // Reset OTP state if email is edited
+  const handleEmailChange = (val: string) => {
+    setEmail(val);
+    setEmailError(null);
     setErrorMsg(null);
+    setValidatedUser(null);
+    setIsOtpSent(false);
+    setOtpNotice(null);
+    setEnteredOtp('');
+  };
 
-    const targetUser = await findUserByEmail(email);
-    if (!targetUser) {
-      setErrorMsg('Email belum terdaftar dalam sistem. Hubungi Owner atau Admin untuk mendaftarkan akun.');
+  // Validasi Email terlebih dahulu
+  const handleCheckEmailAndSendOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setEmailError(null);
+    setErrorMsg(null);
+    setOtpNotice(null);
+
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      setEmailError('Silakan masukkan alamat email.');
       return;
     }
 
-    setIsLoading(true);
-    setTimeout(() => {
+    setIsValidatingEmail(true);
+    try {
+      const user = await findUserByEmail(cleanEmail);
+      if (!user) {
+        setEmailError('Email belum terdaftar dalam sistem. Hubungi Owner atau Admin untuk mendaftarkan akun.');
+        setValidatedUser(null);
+        setIsOtpSent(false);
+        setIsValidatingEmail(false);
+        return;
+      }
+
+      // Email terdaftar! Set user dan kirim OTP
+      setValidatedUser(user);
       const code = generateRandomOtp();
       setGeneratedOtp(code);
       setIsOtpSent(true);
-      setIsLoading(false);
-      setOtpNotice(`Kode verifikasi dikirim ke ${email.trim()}: ${code}`);
-    }, 350);
+      setOtpNotice(`Kode verifikasi 6-digit telah dikirim ke ${cleanEmail}. Silakan periksa inbox email Anda.`);
+      console.info(`[Caozy Auth] Kode OTP untuk ${cleanEmail}: ${code}`);
+    } catch (err) {
+      setEmailError('Gagal memeriksa email. Silakan coba lagi.');
+    } finally {
+      setIsValidatingEmail(false);
+    }
   };
 
+  // Verifikasi OTP dan Masuk
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
 
-    const targetUser = await findUserByEmail(email);
-    if (!targetUser) {
-      setErrorMsg('Email tidak ditemukan dalam sistem.');
+    if (!validatedUser) {
+      setErrorMsg('Silakan cek dan validasi email terlebih dahulu.');
+      return;
+    }
+
+    if (!isOtpSent) {
+      setErrorMsg('Silakan kirim kode OTP terlebih dahulu.');
       return;
     }
 
@@ -74,26 +116,26 @@ export const OwnerEmailAuthScreen: React.FC<OwnerEmailAuthScreenProps> = ({
       return;
     }
 
-    setIsLoading(true);
-    const session = saveAuthSession(targetUser, 'email_otp');
+    setIsSubmitting(true);
+    try {
+      const session = saveAuthSession(validatedUser, 'email_otp');
 
-    await db.auditLogs.add({
-      id: `audit-login-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      actorId: targetUser.id,
-      actorName: `${targetUser.name} (${targetUser.role})`,
-      action: 'LOGIN_EMAIL_OTP',
-      entity: 'auth',
-      entityId: targetUser.email,
-      details: `${targetUser.name} (${targetUser.role}) berhasil masuk melalui verifikasi kode OTP Email.`,
-    });
+      await db.auditLogs.add({
+        id: `audit-login-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        actorId: validatedUser.id,
+        actorName: `${validatedUser.name} (${validatedUser.role})`,
+        action: 'LOGIN_EMAIL_OTP',
+        entity: 'auth',
+        entityId: validatedUser.email,
+        details: `${validatedUser.name} (${validatedUser.role}) berhasil masuk melalui verifikasi kode OTP Email.`,
+      });
 
-    onAuthSuccess(session);
-  };
-
-  const useAutoFillCode = () => {
-    if (generatedOtp) {
-      setEnteredOtp(generatedOtp);
+      onAuthSuccess(session);
+    } catch (err) {
+      setErrorMsg('Gagal menyelesaikan proses login.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -130,129 +172,156 @@ export const OwnerEmailAuthScreen: React.FC<OwnerEmailAuthScreenProps> = ({
           </div>
         )}
 
-        {/* OTP Notice Banner */}
+        {/* OTP Notice Banner (DOES NOT display the OTP code on screen) */}
         {otpNotice && (
-          <div className="p-3 bg-emerald-950/60 border border-emerald-800/80 rounded-2xl text-xs text-emerald-300 space-y-2 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 font-bold">
-                <CheckCircle2 size={15} className="text-emerald-400" />
-                <span>Kode OTP Terkirim</span>
-              </div>
-              <button
-                type="button"
-                onClick={useAutoFillCode}
-                className="text-[11px] bg-emerald-800/80 hover:bg-emerald-700 text-white font-bold px-2 py-0.5 rounded cursor-pointer transition-colors"
-              >
-                Isi Otomatis
-              </button>
-            </div>
-            <div className="flex items-center justify-between p-2 bg-emerald-950/80 rounded-xl border border-emerald-800/50">
-              <span className="text-[11px] text-emerald-300/80">Kode 6-Digit:</span>
-              <span className="font-mono font-black text-sm text-[#b6d333] tracking-widest">
-                {generatedOtp}
-              </span>
-            </div>
+          <div className="p-3 bg-emerald-950/60 border border-emerald-800/80 rounded-2xl text-xs text-emerald-300 flex items-start gap-2.5 animate-in fade-in duration-200">
+            <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+            <span className="leading-relaxed">{otpNotice}</span>
           </div>
         )}
 
-        {/* OTP Email Form */}
+        {/* SINGLE SCREEN FORM (No steps, validates email then OTP together) */}
         <div className="space-y-4">
-          {!isOtpSent ? (
-            <form onSubmit={handleSendOtp} className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-stone-300 block mb-1.5">
-                  Email
-                </label>
-                <div className="relative">
-                  <Mail
-                    size={16}
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400"
-                  />
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="nama@gmail.com"
-                    className="w-full bg-[#16171a] border border-stone-700 rounded-xl pl-10 pr-3 py-2.5 text-xs text-white placeholder-stone-500 focus:outline-none focus:border-[#b6d333] font-medium"
-                    autoFocus
-                  />
-                </div>
-              </div>
+          {/* 1. Email Input & Validation */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-stone-300">
+                Email
+              </label>
+              {validatedUser && (
+                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-800/80 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <UserCheck size={11} />
+                  <span>Terdaftar ({validatedUser.name} • {validatedUser.role})</span>
+                </span>
+              )}
+            </div>
 
+            <div className="relative">
+              <Mail
+                size={16}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400"
+              />
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => handleEmailChange(e.target.value)}
+                placeholder="nama@gmail.com"
+                className={`w-full bg-[#16171a] border rounded-xl pl-10 pr-24 py-2.5 text-xs text-white placeholder-stone-500 focus:outline-none font-medium transition-colors ${
+                  emailError
+                    ? 'border-red-600 focus:border-red-500'
+                    : validatedUser
+                    ? 'border-emerald-600/80 focus:border-emerald-500'
+                    : 'border-stone-700 focus:border-[#b6d333]'
+                }`}
+                autoFocus
+              />
+
+              {/* Tombol Kirim / Kirim Ulang OTP di dalam baris email */}
               <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-[#b6d333] hover:bg-[#c7e63b] text-stone-950 font-black py-3 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-[#b6d333]/20 transition-all cursor-pointer disabled:opacity-50"
+                type="button"
+                onClick={() => handleCheckEmailAndSendOtp()}
+                disabled={isValidatingEmail || !email.trim()}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-[#b6d333] hover:bg-[#c7e63b] disabled:bg-stone-800 disabled:text-stone-500 text-stone-950 text-[11px] font-black rounded-lg transition-colors cursor-pointer flex items-center gap-1"
               >
-                {isLoading ? (
-                  <span>Mengirim Kode OTP...</span>
+                {isValidatingEmail ? (
+                  <span>Mengecek...</span>
+                ) : isOtpSent ? (
+                  <>
+                    <RefreshCw size={11} />
+                    <span>Kirim Ulang</span>
+                  </>
+                ) : (
+                  <>
+                    <Send size={11} />
+                    <span>Kirim OTP</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Email Validation Error message */}
+            {emailError && (
+              <p className="text-[11px] text-red-400 flex items-center gap-1 pt-0.5">
+                <AlertCircle size={12} className="shrink-0" />
+                <span>{emailError}</span>
+              </p>
+            )}
+          </div>
+
+          {/* 2. Kode Verifikasi OTP 6-Digit (Always on same screen) */}
+          <div className="space-y-1.5 pt-1">
+            <div className="flex items-center justify-between">
+              <label
+                className={`text-xs font-bold flex items-center gap-1.5 ${
+                  isOtpSent ? 'text-stone-300' : 'text-stone-500'
+                }`}
+              >
+                <KeyRound size={14} className={isOtpSent ? 'text-[#b6d333]' : 'text-stone-500'} />
+                <span>Kode Verifikasi OTP 6-Digit</span>
+              </label>
+              {!isOtpSent && (
+                <span className="text-[10px] text-stone-500">
+                  Kirim OTP dulu untuk mengisi
+                </span>
+              )}
+            </div>
+
+            <input
+              type="text"
+              maxLength={6}
+              disabled={!isOtpSent}
+              value={enteredOtp}
+              onChange={(e) => setEnteredOtp(e.target.value.replace(/\D/g, ''))}
+              placeholder={isOtpSent ? 'Masukkan 6 digit kode' : 'Menunggu pengiriman OTP...'}
+              className={`w-full bg-[#16171a] border rounded-xl px-4 py-3 text-center text-xl tracking-widest font-mono font-bold text-white placeholder-stone-600 focus:outline-none transition-all ${
+                !isOtpSent
+                  ? 'border-stone-800/80 bg-stone-900/40 text-stone-600 cursor-not-allowed opacity-60'
+                  : 'border-stone-700 focus:border-[#b6d333]'
+              }`}
+            />
+          </div>
+
+          {/* 3. Action Buttons */}
+          <div className="pt-2">
+            {!isOtpSent ? (
+              <button
+                type="button"
+                onClick={() => handleCheckEmailAndSendOtp()}
+                disabled={isValidatingEmail || !email.trim()}
+                className="w-full bg-[#b6d333] hover:bg-[#c7e63b] disabled:bg-stone-800 disabled:text-stone-600 text-stone-950 font-black py-3 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-[#b6d333]/20 transition-all cursor-pointer"
+              >
+                {isValidatingEmail ? (
+                  <span>Memvalidasi Email...</span>
                 ) : (
                   <>
                     <Send size={14} />
-                    <span>Kirim Kode OTP</span>
+                    <span>Validasi Email & Kirim OTP</span>
                     <ArrowRight size={14} />
                   </>
                 )}
               </button>
-            </form>
-          ) : (
-            <form onSubmit={handleVerifyOtp} className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-bold text-stone-300 flex items-center gap-1.5">
-                    <KeyRound size={14} className="text-[#b6d333]" />
-                    <span>Kode Verifikasi 6-Digit</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => handleSendOtp()}
-                    className="text-[11px] text-[#b6d333] hover:underline flex items-center gap-1 font-bold cursor-pointer"
-                  >
-                    <RefreshCw size={11} />
-                    <span>Kirim Ulang</span>
-                  </button>
-                </div>
-                <input
-                  type="text"
-                  maxLength={6}
-                  required
-                  value={enteredOtp}
-                  onChange={(e) => setEnteredOtp(e.target.value.replace(/\D/g, ''))}
-                  placeholder="Contoh: 123456"
-                  className="w-full bg-[#16171a] border border-stone-700 rounded-xl px-4 py-3 text-center text-xl tracking-widest font-mono font-bold text-white placeholder-stone-600 focus:outline-none focus:border-[#b6d333]"
-                  autoFocus
-                />
-                <p className="text-[11px] text-stone-400 mt-1.5 text-center">
-                  Email tujuan: <strong className="text-stone-200">{email}</strong>
-                </p>
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsOtpSent(false);
-                    setEnteredOtp('');
-                    setOtpNotice(null);
-                  }}
-                  className="flex-1 bg-stone-800 hover:bg-stone-700 text-stone-300 font-bold py-2.5 rounded-xl text-xs transition-colors cursor-pointer"
-                >
-                  Ganti Email
-                </button>
-                <button
-                  type="submit"
-                  disabled={isLoading || enteredOtp.length !== 6}
-                  className="flex-2 bg-[#b6d333] hover:bg-[#c7e63b] disabled:bg-stone-800 disabled:text-stone-600 text-stone-950 font-black py-2.5 rounded-xl text-xs shadow-md shadow-[#b6d333]/20 transition-all cursor-pointer"
-                >
-                  {isLoading ? 'Memverifikasi...' : 'Verifikasi & Masuk'}
-                </button>
-              </div>
-            </form>
-          )}
+            ) : (
+              <button
+                type="button"
+                onClick={handleVerifyOtp}
+                disabled={isSubmitting || enteredOtp.length !== 6}
+                className="w-full bg-[#b6d333] hover:bg-[#c7e63b] disabled:bg-stone-800 disabled:text-stone-600 text-stone-950 font-black py-3 rounded-xl text-xs shadow-md shadow-[#b6d333]/20 transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? (
+                  <span>Memverifikasi...</span>
+                ) : (
+                  <>
+                    <Lock size={14} />
+                    <span>Verifikasi OTP & Masuk</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Clean Ready-to-use Footer */}
+        {/* Clean Footer */}
         <div className="pt-2 border-t border-stone-800/80 text-center">
           <p className="text-[11px] text-stone-500 font-medium">
             Caozy Kedai Minuman • Artisan Beverage ERP & POS

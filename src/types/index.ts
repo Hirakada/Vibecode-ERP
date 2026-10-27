@@ -164,6 +164,11 @@ export interface SaleItem {
     name: string;
     price: number;
   }[];
+  itemDiscount?: number;
+  itemDiscountInfo?: {
+    type: 'percent' | 'flat';
+    value: number;
+  };
   itemTotal: number;
   notes?: string;
 }
@@ -202,8 +207,11 @@ export interface Sale {
   shiftId: string;
   items: SaleItem[];
   subtotal: number;
+  itemDiscountTotal?: number;
   discount: number;
   discountInfo?: DiscountInfo;
+  serviceFee?: number;
+  deliveryFee?: number;
   tax: number;
   grandTotal: number;
   status: TransactionStatus;
@@ -243,6 +251,50 @@ export interface Supplier {
   address: string;
 }
 
+export type PurchaseStatus = 'waiting' | 'arrived' | 'cancelled';
+
+export interface PurchaseOrderItem {
+  ingredientId: string;
+  ingredientName?: string;
+  unit: UnitOfMeasure;
+  packQty: number; // Jml Pcs / Box
+  contentPerPack: number; // Isi per pcs (g / ml / pcs)
+  pricePerPack: number; // Harga per pcs (Rp)
+  totalStockPlanned: number; // packQty * contentPerPack
+  itemRawTotal: number; // packQty * pricePerPack
+  itemDiscount?: number; // Diskon flat atau persen
+  itemDiscountInfo?: {
+    type: 'percent' | 'flat';
+    value: number;
+  };
+  itemNetTotal: number; // itemRawTotal - itemDiscount
+  batchNumber?: string;
+  expiryDate?: string;
+  quantityReceived?: number; // Real physical count received
+}
+
+export interface PurchaseOrder {
+  id: string;
+  poNumber: string; // e.g. PO-20261027-101
+  orderDate: string;
+  supplierId: string;
+  supplierName: string;
+  status: PurchaseStatus; // 'waiting' (dibeli/menunggu kedatangan) | 'arrived' (diterima fisik & stok update) | 'cancelled'
+  items: PurchaseOrderItem[];
+  rawSubtotal: number;
+  itemDiscountTotal: number;
+  orderDiscount: number; // Diskon total belanja / faktur
+  deliveryFee: number; // Ongkir
+  serviceFee: number; // Admin / Layanan
+  grandTotal: number; // Net total bayar PO
+  notes?: string;
+  orderedBy: string;
+  receivedAt?: string;
+  receivedBy?: string;
+  receiptId?: string;
+  receiptNumber?: string;
+}
+
 export interface GoodsReceiptItem {
   ingredientId: string;
   quantity: number;
@@ -255,13 +307,20 @@ export interface GoodsReceiptItem {
 export interface GoodsReceipt {
   id: string;
   receiptNumber: string;
+  purchaseOrderId?: string;
+  poNumber?: string;
   supplierId: string;
   supplierName: string;
   receivedAt: string;
   items: GoodsReceiptItem[];
+  itemDiscountTotal?: number;
+  orderDiscount?: number;
+  deliveryFee?: number;
+  serviceFee?: number;
   totalAmount: number;
   notes?: string;
   receivedBy: string;
+  verifiedPhysicalInspection?: boolean;
 }
 
 export interface Expense {

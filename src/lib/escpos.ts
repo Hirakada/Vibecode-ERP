@@ -198,6 +198,9 @@ export function buildReceiptEscPos(
     if (item.notes) {
       builder.textLine(` * ${item.notes}`);
     }
+    if (item.itemDiscount && item.itemDiscount > 0) {
+      builder.twoColumns(' Diskon Item:', `-${formatIDR(item.itemDiscount)}`);
+    }
     builder.twoColumns(` ${item.quantity} x ${formatIDR(item.unitPrice)}`, formatIDR(item.itemTotal));
   });
 
@@ -205,10 +208,13 @@ export function buildReceiptEscPos(
 
   // 4. Totals
   builder.twoColumns('Subtotal:', formatIDR(sale.subtotal));
+  if (sale.itemDiscountTotal && sale.itemDiscountTotal > 0) {
+    builder.twoColumns('Diskon Item:', `-${formatIDR(sale.itemDiscountTotal)}`);
+  }
   if (sale.discount > 0) {
     const discountLabel = sale.discountInfo?.type === 'percent'
-      ? `Diskon (${sale.discountInfo.value}%):`
-      : 'Diskon:';
+      ? `Diskon Total (${sale.discountInfo.value}%):`
+      : 'Diskon Total:';
     builder.twoColumns(discountLabel, `-${formatIDR(sale.discount)}`);
     if (sale.discountInfo?.reason) {
       builder.textLine(` * ${sale.discountInfo.reason}`);
@@ -216,6 +222,12 @@ export function buildReceiptEscPos(
     if (sale.discountInfo?.approvedBy) {
       builder.textLine(` Otorisasi: ${sale.discountInfo.approvedBy}`);
     }
+  }
+  if (sale.serviceFee && sale.serviceFee > 0) {
+    builder.twoColumns('Biaya Layanan:', `+${formatIDR(sale.serviceFee)}`);
+  }
+  if (sale.deliveryFee && sale.deliveryFee > 0) {
+    builder.twoColumns('Ongkos Kirim:', `+${formatIDR(sale.deliveryFee)}`);
   }
   if (sale.tax > 0) {
     builder.twoColumns(`Pajak (PB1):`, formatIDR(sale.tax));

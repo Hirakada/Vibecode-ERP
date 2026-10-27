@@ -61,6 +61,8 @@ export const PosLayout: React.FC<PosLayoutProps> = ({
   const [cartItems, setCartItems] = useState<SaleItem[]>([]);
   const [discount, setDiscount] = useState<number>(0);
   const [discountInfo, setDiscountInfo] = useState<DiscountInfo | null>(null);
+  const [serviceFee, setServiceFee] = useState<number>(0);
+  const [deliveryFee, setDeliveryFee] = useState<number>(0);
 
   // Modals state
   const [customizingProduct, setCustomizingProduct] = useState<Product | null>(null);
@@ -130,17 +132,20 @@ export const PosLayout: React.FC<PosLayoutProps> = ({
         (i) =>
           i.productId === item.productId &&
           i.variantId === item.variantId &&
-          JSON.stringify(i.selectedModifiers) === JSON.stringify(item.selectedModifiers)
+          JSON.stringify(i.selectedModifiers) === JSON.stringify(item.selectedModifiers) &&
+          !i.itemDiscount
       );
 
       if (existingIndex > -1) {
         const next = [...prev];
         const exist = next[existingIndex];
         const newQty = exist.quantity + item.quantity;
+        const raw = exist.unitPrice * newQty;
+        const discountAmt = exist.itemDiscount || 0;
         next[existingIndex] = {
           ...exist,
           quantity: newQty,
-          itemTotal: exist.unitPrice * newQty,
+          itemTotal: Math.max(0, raw - discountAmt),
         };
         return next;
       }
@@ -153,16 +158,46 @@ export const PosLayout: React.FC<PosLayoutProps> = ({
       if (newQty <= 0) {
         return prev.filter((i) => i.id !== itemId);
       }
-      return prev.map((item) =>
-        item.id === itemId
-          ? {
-              ...item,
-              quantity: newQty,
-              itemTotal: item.unitPrice * newQty,
-            }
-          : item
-      );
+      return prev.map((item) => {
+        if (item.id !== itemId) return item;
+        const raw = item.unitPrice * newQty;
+        let itemDiscount = item.itemDiscount || 0;
+        if (item.itemDiscountInfo) {
+          if (item.itemDiscountInfo.type === 'percent') {
+            itemDiscount = Math.round((raw * item.itemDiscountInfo.value) / 100);
+          } else {
+            itemDiscount = Math.min(raw, item.itemDiscountInfo.value);
+          }
+        }
+        itemDiscount = Math.min(raw, Math.max(0, itemDiscount));
+        return {
+          ...item,
+          quantity: newQty,
+          itemDiscount,
+          itemTotal: Math.max(0, raw - itemDiscount),
+        };
+      });
     });
+  };
+
+  const handleApplyItemDiscount = (
+    itemId: string,
+    discountAmount: number,
+    discountInfo?: { type: 'percent' | 'flat'; value: number }
+  ) => {
+    setCartItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== itemId) return item;
+        const raw = item.unitPrice * item.quantity;
+        const validDiscount = Math.min(raw, Math.max(0, discountAmount));
+        return {
+          ...item,
+          itemDiscount: validDiscount,
+          itemDiscountInfo: discountInfo,
+          itemTotal: Math.max(0, raw - validDiscount),
+        };
+      })
+    );
   };
 
   const handleRemoveItem = (itemId: string) => {
@@ -173,13 +208,24 @@ export const PosLayout: React.FC<PosLayoutProps> = ({
     setCartItems([]);
     setDiscount(0);
     setDiscountInfo(null);
+    setServiceFee(0);
+    setDeliveryFee(0);
   };
 
-  // Cart calculations
-  const rawSubtotal = cartItems.reduce((sum, item) => sum + item.itemTotal, 0);
-  const netSubtotal = Math.max(0, rawSubtotal - discount);
-  const tax = Math.round((netSubtotal * settings.taxRatePercent) / 100);
-  const grandTotal = netSubtotal + tax;
+  // Cart calculations:
+  // Raw subtotal = sum(unitPrice * quantity)
+  // Item discounts total = sum(itemDiscount)
+  // Subtotal after item discounts = rawSubtotal - itemDiscountTotal
+  // Order discount = discount
+  // Taxable net = max(0, subtotalAfterItemDiscounts - discount)
+  // Tax PB1 = round(taxable net * taxRatePercent / 100)
+  // Grand total = taxable net + tax + serviceFee + deliveryFee
+  const rawSubtotal = cartItems.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+  const itemDiscountTotal = cartItems.reduce((sum, item) => sum + (item.itemDiscount || 0), 0);
+  const subtotalAfterItemDiscounts = Math.max(0, rawSubtotal - itemDiscountTotal);
+  const netTaxableSubtotal = Math.max(0, subtotalAfterItemDiscounts - discount);
+  const tax = Math.round((netTaxableSubtotal * settings.taxRatePercent) / 100);
+  const grandTotal = Math.max(0, netTaxableSubtotal + tax + serviceFee + deliveryFee);
 
   // Handle Payment Confirmation
   const handleConfirmPayment = async (
@@ -201,8 +247,11 @@ export const PosLayout: React.FC<PosLayoutProps> = ({
       const res = await processSale({
         items: cartItems,
         subtotal: rawSubtotal,
+        itemDiscountTotal,
         discount,
         discountInfo: discountInfo || undefined,
+        serviceFee,
+        deliveryFee,
         tax,
         grandTotal,
         paymentMethod: method,
@@ -221,6 +270,8 @@ export const PosLayout: React.FC<PosLayoutProps> = ({
         setCartItems([]);
         setDiscount(0);
         setDiscountInfo(null);
+        setServiceFee(0);
+        setDeliveryFee(0);
         setIsPaymentOpen(false);
         setCurrentReceiptSale(res.sale);
         setIsReceiptReprint(false);
@@ -513,6 +564,11 @@ export const PosLayout: React.FC<PosLayoutProps> = ({
             setDiscountInfo(null);
           }}
           taxRatePercent={settings.taxRatePercent}
+          serviceFee={serviceFee}
+          onChangeServiceFee={setServiceFee}
+          deliveryFee={deliveryFee}
+          onChangeDeliveryFee={setDeliveryFee}
+          onApplyItemDiscount={handleApplyItemDiscount}
         />
       </div>
 
@@ -570,7 +626,11 @@ export const PosLayout: React.FC<PosLayoutProps> = ({
           onClose={() => setIsPaymentOpen(false)}
           grandTotal={grandTotal}
           subtotal={rawSubtotal}
+          itemDiscountTotal={itemDiscountTotal}
           discount={discount}
+          serviceFee={serviceFee}
+          deliveryFee={deliveryFee}
+          tax={tax}
           onConfirmPayment={handleConfirmPayment}
           isProcessing={isProcessingPayment}
           errorMessage={paymentError}

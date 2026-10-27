@@ -8,7 +8,11 @@ interface PaymentModalProps {
   onClose: () => void;
   grandTotal: number;
   subtotal?: number;
+  itemDiscountTotal?: number;
   discount?: number;
+  serviceFee?: number;
+  deliveryFee?: number;
+  tax?: number;
   onConfirmPayment: (
     method: PaymentMethod,
     amountPaid: number,
@@ -25,7 +29,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   onClose,
   grandTotal,
   subtotal,
+  itemDiscountTotal,
   discount,
+  serviceFee,
+  deliveryFee,
+  tax,
   onConfirmPayment,
   isProcessing,
   errorMessage,
@@ -68,25 +76,44 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-150">
       <div className="w-full sm:max-w-lg bg-stone-900 border border-stone-800 rounded-t-3xl sm:rounded-2xl max-h-[95vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-stone-800">
-          <div>
+        <div className="p-4 border-b border-stone-800 space-y-2">
+          <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-white">Konfirmasi Pembayaran Manual</h2>
-            <div className="flex items-center gap-2 flex-wrap text-xs text-stone-400 mt-0.5">
-              <span>Total Tagihan: <strong className="text-[#b6d333] text-sm font-black">{formatIDR(grandTotal)}</strong></span>
-              {discount && discount > 0 && (
-                <span className="text-[11px] bg-[#b6d333]/15 text-[#b6d333] font-semibold px-2 py-0.5 rounded border border-[#b6d333]/30">
-                  Diskon: -{formatIDR(discount)}
-                </span>
-              )}
-            </div>
+            <button
+              onClick={onClose}
+              disabled={isProcessing}
+              className="p-2 text-stone-400 hover:text-white rounded-full bg-stone-800 cursor-pointer"
+            >
+              <X size={18} />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            disabled={isProcessing}
-            className="p-2 text-stone-400 hover:text-white rounded-full bg-stone-800 cursor-pointer"
-          >
-            <X size={18} />
-          </button>
+
+          {/* Detailed summary tag badges */}
+          <div className="flex items-center gap-1.5 flex-wrap text-xs text-stone-300">
+            <div className="px-2.5 py-1 bg-[#b6d333]/15 text-[#b6d333] border border-[#b6d333]/30 rounded-lg">
+              Total Tagihan: <strong className="text-sm font-black text-white">{formatIDR(grandTotal)}</strong>
+            </div>
+            {itemDiscountTotal && itemDiscountTotal > 0 ? (
+              <span className="text-[11px] bg-stone-800 text-[#b6d333] px-2 py-0.5 rounded border border-stone-700">
+                Diskon Item: -{formatIDR(itemDiscountTotal)}
+              </span>
+            ) : null}
+            {discount && discount > 0 ? (
+              <span className="text-[11px] bg-[#b6d333]/10 text-[#b6d333] px-2 py-0.5 rounded border border-[#b6d333]/30">
+                Diskon Belanja: -{formatIDR(discount)}
+              </span>
+            ) : null}
+            {serviceFee && serviceFee > 0 ? (
+              <span className="text-[11px] bg-stone-800 text-stone-300 px-2 py-0.5 rounded border border-stone-700">
+                Layanan: +{formatIDR(serviceFee)}
+              </span>
+            ) : null}
+            {deliveryFee && deliveryFee > 0 ? (
+              <span className="text-[11px] bg-stone-800 text-stone-300 px-2 py-0.5 rounded border border-stone-700">
+                Ongkir: +{formatIDR(deliveryFee)}
+              </span>
+            ) : null}
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="p-4 overflow-y-auto space-y-4 flex-1">
